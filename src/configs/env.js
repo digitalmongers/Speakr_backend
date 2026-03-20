@@ -1,7 +1,7 @@
 const { z } = require('zod');
 const Logger = require('../utils/logger');
 
-// Define the environment schema
+
 const envSchema = z.object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     PORT: z.string().transform(Number).default('5000'),
@@ -22,7 +22,7 @@ const envSchema = z.object({
     AWS_S3_SIGNED_URL_EXPIRES: z.string().transform(Number).default('3600'),
 });
 
-// Parse and validate the environment variables
+
 const parseEnv = () => {
     try {
         const parsed = envSchema.safeParse(process.env);

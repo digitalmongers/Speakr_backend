@@ -10,7 +10,7 @@ const sanitize = (obj) => {
 
     for (const [key, value] of Object.entries(obj)) {
         if (typeof value === 'object' && value !== null) {
-            // Avoid circular references or deep objects blowing up the log
+
             try {
                 sanitized[key] = sanitize(value);
             } catch (e) {
