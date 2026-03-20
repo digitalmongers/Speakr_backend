@@ -38,7 +38,7 @@ app.use(requestLogger);
 app.get('/', (req, res) => {
     res.status(200).json({
         success: true,
-        message: 'Welcome to Patel Properties API',
+        message: 'Welcome to Speakr API',
         version: '1.0.0',
         status: 'Operational'
     });

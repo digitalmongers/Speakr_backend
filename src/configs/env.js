@@ -10,7 +10,7 @@ const envSchema = z.object({
     LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'debug']).default('info'),
     SENDGRID_API_KEY: z.string().optional(),
     SENDGRID_FROM_EMAIL: z.string().email().default('info@digitalmongers.com'),
-    SENDGRID_FROM_NAME: z.string().default('Patel Properties'),
+    SENDGRID_FROM_NAME: z.string().default('Speakr'),
     OWNER_EMAIL: z.string().email().default('info@digitalmongers.com'),
     MAILGUN_API_KEY: z.string().optional(),
     MAILGUN_DOMAIN: z.string().optional(),

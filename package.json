@@ -1,7 +1,7 @@
 {
   "name": "patel-properties-backend",
   "version": "1.0.0",
-  "description": "Professional Node.js Express Boilerplate for Patel Properties",
+  "description": "Professional Node.js Express Boilerplate for Speakr",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
