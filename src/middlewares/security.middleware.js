@@ -13,7 +13,7 @@ const env = require('../configs/env');
  * Implements strict CSP, Sanitization, CORS Whitelisting, and Rate Limiting.
  */
 const configureSecurity = (app) => {
-    // 1. Set security HTTP headers with strict CSP
+    // Set security HTTP headers with strict CSP
     app.use(helmet({
         contentSecurityPolicy: {
             directives: {
@@ -31,7 +31,7 @@ const configureSecurity = (app) => {
         },
     }));
 
-    // 2. DOMPurify Sanitization Middleware (Prevention of XSS in Request Body)
+    // DOMPurify Sanitization Middleware (Prevention of XSS in Request Body)
     // XSS Clean was already installed in app.js, but this is much more robust for deep objects
     app.use((req, res, next) => {
         if (req.body && typeof req.body === 'object') {
@@ -49,7 +49,7 @@ const configureSecurity = (app) => {
         next();
     });
 
-    // 3. CORS configuration - Enterprise Whitelist approach
+    // CORS configuration - Enterprise Whitelist approach
     const whitelist = env.ALLOWED_ORIGINS
         ? env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
         : [];
@@ -110,10 +110,10 @@ const configureSecurity = (app) => {
         })
     );
 
-    // 4. Prevent parameter pollution (e.g., ?id=1&id=2)
+    //  Prevent parameter pollution (e.g., ?id=1&id=2)
     app.use(hpp());
 
-    // 5. Rate Limiting (Using memory store since MultiLayerCache is not available in boilerplate out of the box)
+    // Rate Limiting (Using memory store since MultiLayerCache is not available in boilerplate out of the box)
     const createLimiter = (max, windowMinutes, message) => {
         return rateLimit({
             max,

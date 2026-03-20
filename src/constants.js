@@ -90,23 +90,18 @@ const REGEX = {
     MONGODB_ID: /^[0-9a-fA-F]{24}$/,
 };
 
-// Roles
+
 const ROLES = {
     ADMIN: 'admin',
     USER: 'user',
 };
 
-// System App Modes
+
 const SYSTEM_MODE = {
     LIVE: 'live',
     MAINTENANCE: 'maintenance'
 };
 
-const PROPERTY_INTERESTS = [
-    '526 Whitener Dr, Dalton, GA',
-    '436 Whitener Dr, Dalton, GA',
-    'General Inquiry'
-];
 
 module.exports = {
     HTTP_STATUS,
@@ -116,6 +111,5 @@ module.exports = {
     ENV,
     REGEX,
     ROLES,
-    SYSTEM_MODE,
-    PROPERTY_INTERESTS
+    SYSTEM_MODE
 };
