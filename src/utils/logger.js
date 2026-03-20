@@ -70,7 +70,7 @@ if (process.env.NODE_ENV !== 'production' || process.env.PERSISTENT_LOGS === 'tr
 const logger = winston.createLogger({
     level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
     format: process.env.NODE_ENV === 'production' ? prodLogFormat : developmentFormat,
-    defaultMeta: { service: 'patel-properties-api' },
+    defaultMeta: { service: 'Speakr' },
     transports,
 });
 
