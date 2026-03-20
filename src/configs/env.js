@@ -15,6 +15,11 @@ const envSchema = z.object({
     MAILGUN_API_KEY: z.string().optional(),
     MAILGUN_DOMAIN: z.string().optional(),
     MAILGUN_HOST: z.string().default('api.mailgun.net'), // 'api.eu.mailgun.net' for EU
+    AWS_ACCESS_KEY_ID: z.string().optional().default(''),
+    AWS_SECRET_ACCESS_KEY: z.string().optional().default(''),
+    AWS_REGION: z.string().optional().default(''),
+    AWS_S3_BUCKET_NAME: z.string().optional().default(''),
+    AWS_S3_SIGNED_URL_EXPIRES: z.string().transform(Number).default('3600'),
 });
 
 // Parse and validate the environment variables
