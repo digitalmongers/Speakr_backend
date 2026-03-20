@@ -1,6 +1,6 @@
 const { z } = require('zod');
 const Logger = require('../utils/logger');
- 
+
 // Define the environment schema
 const envSchema = z.object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
