@@ -20,6 +20,11 @@ const envSchema = z.object({
     AWS_REGION: z.string().optional().default(''),
     AWS_S3_BUCKET_NAME: z.string().optional().default(''),
     AWS_S3_SIGNED_URL_EXPIRES: z.string().transform(Number).default('3600'),
+    
+    // Redis Configuration
+    REDIS_URL: z.string().default('redis://127.0.0.1:6379'),
+    REDIS_MAX_RETRIES_PER_REQUEST: z.string().transform(Number).default('3'),
+    REDIS_CONNECT_TIMEOUT: z.string().transform(Number).default('10000'),
 });
 
 

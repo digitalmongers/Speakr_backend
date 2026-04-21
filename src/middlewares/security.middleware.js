@@ -9,6 +9,33 @@ const Logger = require('../utils/logger');
 const env = require('../configs/env');
 
 /**
+ * Helper to create rate limiters
+ * @param {number} max - Max requests
+ * @param {number} windowMinutes - Time window in minutes
+ * @param {string} message - Error message
+ */
+const createLimiter = (max, windowMinutes, message) => {
+    return rateLimit({
+        max,
+        windowMs: windowMinutes * 60 * 1000,
+        message: {
+            status: httpStatus.TOO_MANY_REQUESTS,
+            message: message || 'Too many requests, please try again later.',
+            code: 'RATE_LIMIT_EXCEEDED'
+        },
+        standardHeaders: true,
+        legacyHeaders: false,
+        validate: { trustProxy: false }
+    });
+};
+
+// General API Limiter (100 requests per 15 minutes per IP)
+const apiLimiter = createLimiter(100, 15, 'General API rate limit exceeded.');
+
+// More stringent limiter for specific sensitive endpoints
+const strictLimiter = createLimiter(10, 15, 'Too many attempts. Please try again in 15 minutes.');
+
+/**
  * Enterprise Security Middleware Configuration
  * Implements strict CSP, Sanitization, CORS Whitelisting, and Rate Limiting.
  */
@@ -113,30 +140,15 @@ const configureSecurity = (app) => {
     //  Prevent parameter pollution (e.g., ?id=1&id=2)
     app.use(hpp());
 
-    // Rate Limiting (Using memory store since MultiLayerCache is not available in boilerplate out of the box)
-    const createLimiter = (max, windowMinutes, message) => {
-        return rateLimit({
-            max,
-            windowMs: windowMinutes * 60 * 1000,
-            message: {
-                status: httpStatus.TOO_MANY_REQUESTS,
-                message: message || 'Too many requests, please try again later.',
-                code: 'RATE_LIMIT_EXCEEDED'
-            },
-            standardHeaders: true,
-            legacyHeaders: false,
-            validate: { trustProxy: false }
-        });
-    };
-
-    // General API Limiter (100 requests per 15 minutes per IP)
-    const apiLimiter = createLimiter(100, 15, 'General API rate limit exceeded.');
-
-    // More stringent limiter for specific sensitive endpoints
-    const strictLimiter = createLimiter(10, 15, 'Too many attempts. Please try again in 15 minutes.');
-
+    // Apply General API Limiter
     app.use('/api', apiLimiter);
-    app.use('/api/v1/contact', strictLimiter); // Applying strict limiter to the contact form as an example
+    
+    // Example: Applying strict limiter specifically to contact form or other sensitive public endpoints
+    app.use('/api/v1/contact', strictLimiter); 
 };
 
-module.exports = configureSecurity;
+module.exports = {
+    configureSecurity,
+    apiLimiter,
+    strictLimiter,
+};

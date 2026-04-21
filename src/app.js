@@ -1,5 +1,5 @@
 const express = require('express');
-const configureSecurity = require('./middlewares/security.middleware');
+const { configureSecurity } = require('./middlewares/security.middleware');
 const { errorConverter, errorHandler } = require('./middlewares/error.middleware');
 const xss = require('xss-clean');
 const compression = require('compression');

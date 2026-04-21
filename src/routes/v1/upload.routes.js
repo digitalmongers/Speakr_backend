@@ -3,23 +3,32 @@ const uploadController = require('../../controllers/upload.controller');
 const uploadValidation = require('../../validations/upload.validation');
 const { uploadAudio, uploadImage, multerErrorHandler } = require('../../middlewares/upload.middleware');
 const validate = require('../../middlewares/validate.middleware');
-// Assuming auth middleware exists, you would add it here if needed:
-// const auth = require('../../middlewares/auth.middleware');
+const userAuth = require('../../middlewares/userAuth.middleware');
+const lockRequest = require('../../middlewares/lockRequest.middleware');
 
 const router = express.Router();
 
-// Route: Upload Audio
-// For production auth would go here: router.post('/audio', auth(), uploadAudio.single('file'), ...)
+/**
+ * Route: Upload Audio
+ * Restricted to authenticated USERS only
+ */
 router.post(
     '/audio',
+    userAuth,
+    lockRequest, // Prevent concurrent uploads of the same file
     uploadAudio.single('file'),
     multerErrorHandler,
     uploadController.uploadAudioFile
 );
 
-// Route: Upload Image
+/**
+ * Route: Upload Image
+ * Restricted to authenticated USERS only
+ */
 router.post(
     '/image',
+    userAuth,
+    lockRequest, // Prevent concurrent uploads
     uploadImage.single('file'),
     multerErrorHandler,
     uploadController.uploadImageFile

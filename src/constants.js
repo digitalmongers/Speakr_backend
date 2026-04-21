@@ -103,6 +103,14 @@ const SYSTEM_MODE = {
 };
 
 
+const GENDER = {
+    MALE: 'male',
+    FEMALE: 'female',
+    OTHER: 'other',
+    PREFER_NOT_TO_SAY: 'prefer not to say'
+};
+
+
 module.exports = {
     HTTP_STATUS,
     ERROR_MESSAGES,
@@ -111,5 +119,6 @@ module.exports = {
     ENV,
     REGEX,
     ROLES,
-    SYSTEM_MODE
+    SYSTEM_MODE,
+    GENDER
 };
