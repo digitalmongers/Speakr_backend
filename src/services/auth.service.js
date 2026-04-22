@@ -226,9 +226,56 @@ const logout = async (userId) => {
     });
 };
 
+/**
+ * Resend OTP to user email
+ * @param {string} email
+ * @returns {Promise<Object>}
+ */
+const resendOTP = async (email) => {
+    const normalizedEmail = email.toLowerCase();
+
+    const pendingUser = await PendingUser.findOne({ email: normalizedEmail });
+
+    if (!pendingUser) {
+        throw new AppError(httpStatus.BAD_REQUEST, 'No pending registration found or session expired. Please signup again.');
+    }
+
+    // Rate Limiting: 60 seconds cooldown between resends
+    const lastSent = pendingUser.updatedAt;
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - lastSent) / 1000);
+    const COOLDOWN = 60;
+
+    if (diffInSeconds < COOLDOWN) {
+        throw new AppError(httpStatus.TOO_MANY_REQUESTS, `Please wait ${COOLDOWN - diffInSeconds} seconds before requesting another code.`);
+    }
+
+    const otp = tokenService.generateOTP();
+    
+    // Update pending user with new OTP and reset attempts
+    pendingUser.otp = otp;
+    pendingUser.otpAttempts = 0;
+    // We update expiresAt to give user another 10 minutes
+    pendingUser.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await pendingUser.save();
+
+    // Send OTP email
+    emailService.sendOTPEmail(normalizedEmail, otp).catch((err) => {
+        Logger.error(`Failed to resend OTP email to ${normalizedEmail}:`, err);
+    });
+
+    await AuditService.record({
+        action: 'AUTH_OTP_RESENT',
+        metadata: { email: normalizedEmail }
+    });
+
+    return { message: 'New OTP sent successfully' };
+};
+
 module.exports = {
     initiateSignup,
     verifyOTPAndCreateUser,
+    resendOTP,
     login,
     logout,
 };

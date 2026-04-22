@@ -31,11 +31,18 @@ const verifyOtp = z.object({
     }),
 });
 
+const resendOtp = z.object({
+    body: z.object({
+        email: z.string().email(),
+    }),
+});
+
 const logout = z.object({});
 
 module.exports = {
     signup,
     login,
     verifyOtp,
+    resendOtp,
     logout,
 };

@@ -31,4 +31,11 @@ router.post('/logout', lockRequest, userAuth, validate(authValidation.logout), a
  */
 router.post('/verify-otp', strictLimiter, lockRequest, validate(authValidation.verifyOtp), authController.verifyOtp);
 
+/**
+ * @route POST /api/v1/auth/resend-otp
+ * @desc Resend OTP to email
+ * @access Public
+ */
+router.post('/resend-otp', strictLimiter, lockRequest, validate(authValidation.resendOtp), authController.resendOtp);
+
 module.exports = router;

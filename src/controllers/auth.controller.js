@@ -134,9 +134,23 @@ const logout = catchAsync(async (req, res) => {
     );
 });
 
+const resendOtp = catchAsync(async (req, res) => {
+    const { email } = req.body;
+    await authService.resendOTP(email);
+
+    return res.status(httpStatus.OK).json(
+        new ApiResponse(
+            httpStatus.OK,
+            null,
+            'A new verification code has been sent to your email.'
+        )
+    );
+});
+
 module.exports = {
     signup,
     verifyOtp,
+    resendOtp,
     login,
     logout,
 };
