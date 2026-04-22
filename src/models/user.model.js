@@ -45,6 +45,7 @@ const userSchema = mongoose.Schema(
                 }
             },
             private: true, // used by the toJSON plugin
+            select: false, // hidden from default queries
         },
         dob: {
             type: Date,
@@ -67,6 +68,7 @@ const userSchema = mongoose.Schema(
         tokenVersion: {
             type: Number,
             default: 0,
+            select: false, // hidden unless explicitly requested
         },
     },
     {

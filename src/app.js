@@ -7,6 +7,7 @@ const routes = require('./routes/v1');
 const AppError = require('./utils/AppError');
 const Logger = require('./utils/logger');
 const requestIdMiddleware = require('./middlewares/requestId.middleware');
+const contextMiddleware = require('./middlewares/context.middleware');
 const requestLogger = require('./middlewares/requestLogger.middleware');
 
 const app = express();
@@ -31,6 +32,9 @@ app.use(compression());
 // Inject request ID
 app.use(requestIdMiddleware);
 
+// Initialize Request Context
+app.use(contextMiddleware);
+
 // Advanced enterprise request/response logger
 app.use(requestLogger);
 
@@ -39,9 +43,13 @@ app.get('/', (req, res) => {
     res.status(200).json({
         success: true,
         message: 'Welcome to Speakr API',
-        version: '1.0.0',
-        status: 'Operational'
+        version: '1.0.0'
     });
+});
+
+// Dedicated health check for pingers (Render keep-alive)
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
 });
 
 // v1 api routes

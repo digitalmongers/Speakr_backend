@@ -1,12 +1,8 @@
-const sgMail = require('@sendgrid/mail');
+const emailQueue = require('../queues/email.queue');
 const Logger = require('../utils/logger');
 
-if (process.env.SENDGRID_API_KEY) {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
-
 /**
- * Send an email
+ * Send an email (via background queue)
  * @param {string} to
  * @param {string} subject
  * @param {string} text
@@ -14,24 +10,14 @@ if (process.env.SENDGRID_API_KEY) {
  * @returns {Promise}
  */
 const sendEmail = async (to, subject, text, html) => {
-    const msg = {
-        from: {
-            email: process.env.SENDGRID_FROM_EMAIL,
-            name: process.env.SENDGRID_FROM_NAME || 'Speakr'
-        },
-        to,
-        subject,
-        text,
-        html,
-    };
-    
     try {
-        await sgMail.send(msg);
-        Logger.info(`Email sent to ${to}`);
+        // Just add to queue and return immediately
+        await emailQueue.add('send-email', { to, subject, text, html });
+        Logger.debug(`Email job added to queue for ${to}`);
     } catch (error) {
-        Logger.error(`Email failed to send to ${to}: ${error.message}`);
-        // In production, we might want to throw this or handle it with a queue
-        // For now, we log it and keep the system moving
+        // If adding to queue fails, we log it. 
+        // Note: The caller doesn't wait for the email to actually send.
+        Logger.error(`Failed to add email job to queue for ${to}: ${error.message}`);
     }
 };
 

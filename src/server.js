@@ -4,12 +4,17 @@ const app = require('./app');
 const connectDB = require('./configs/db.config');
 const Logger = require('./utils/logger');
 const env = require('./configs/env');
+const { initEmailWorker } = require('./workers/email.worker');
+const { closeRedis } = require('./configs/redis');
 
 const port = env.PORT;
 let server;
 
 // Connect to MongoDB
 connectDB().then(() => {
+    // Initialize Email Worker
+    initEmailWorker();
+
     server = app.listen(port, () => {
         Logger.info(`Server is running on port ${port}`);
     });
@@ -22,6 +27,8 @@ const exitHandler = () => {
             try {
                 await mongoose.connection.close();
                 Logger.info('MongoDB connection closed.');
+                await closeRedis();
+                Logger.info('Redis connection closed.');
                 process.exit(1);
             } catch (err) {
                 Logger.error('Error closing MongoDB connection', { error: err });
@@ -49,6 +56,8 @@ process.on('SIGTERM', () => {
             try {
                 await mongoose.connection.close();
                 Logger.info('MongoDB connection closed.');
+                await closeRedis();
+                Logger.info('Redis connection closed.');
                 process.exit(0);
             } catch (err) {
                 Logger.error('Error closing MongoDB connection', { error: err });
@@ -66,6 +75,8 @@ process.on('SIGINT', () => {
             try {
                 await mongoose.connection.close();
                 Logger.info('MongoDB connection closed.');
+                await closeRedis();
+                Logger.info('Redis connection closed.');
                 process.exit(0);
             } catch (err) {
                 Logger.error('Error closing MongoDB connection', { error: err });

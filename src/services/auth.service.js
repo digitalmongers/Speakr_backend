@@ -10,6 +10,7 @@ const PendingUser = require('../models/pendingUser.model');
 const { ERROR_MESSAGES, ROLES } = require('../constants');
 const { redisClient } = require('../configs/redis');
 const Logger = require('../utils/logger');
+const AuditService = require('./audit.service');
 
 /**
  * Helper to manage idempotency locks via Redis
@@ -52,9 +53,19 @@ const initiateSignup = async (userBody) => {
 
     try {
         if (await User.isEmailTaken(email)) {
+            await AuditService.record({
+                action: 'AUTH_SIGNUP_BLOCKED',
+                status: 'FAILURE',
+                metadata: { email, reason: 'Email already taken' }
+            });
             throw new AppError(httpStatus.BAD_REQUEST, 'Email already taken');
         }
         if (await User.isUsernameTaken(username)) {
+            await AuditService.record({
+                action: 'AUTH_SIGNUP_BLOCKED',
+                status: 'FAILURE',
+                metadata: { username, reason: 'Username already taken' }
+            });
             throw new AppError(httpStatus.BAD_REQUEST, 'Username already taken');
         }
 
@@ -102,7 +113,7 @@ const verifyOTPAndCreateUser = async (email, otp) => {
     }
 
     try {
-        const pendingUser = await PendingUser.findOne({ email: normalizedEmail });
+        const pendingUser = await PendingUser.findOne({ email: normalizedEmail }).lean();
 
         if (!pendingUser) {
             throw new AppError(httpStatus.BAD_REQUEST, 'No pending registration found or code expired');
@@ -114,10 +125,21 @@ const verifyOTPAndCreateUser = async (email, otp) => {
             await PendingUser.findByIdAndUpdate(pendingUser._id, { $inc: { otpAttempts: 1 } });
             
             if (pendingUser.otpAttempts + 1 >= 5) {
+                await AuditService.record({
+                    action: 'AUTH_OTP_MAX_ATTEMPTS',
+                    status: 'FAILURE',
+                    metadata: { email: normalizedEmail, attempts: pendingUser.otpAttempts + 1 }
+                });
                 await PendingUser.deleteOne({ _id: pendingUser._id });
                 throw new AppError(httpStatus.BAD_REQUEST, 'Too many failed attempts. Registration cancelled.');
             }
             
+            await AuditService.record({
+                action: 'AUTH_OTP_MISMATCH',
+                status: 'FAILURE',
+                metadata: { email: normalizedEmail, attempt: pendingUser.otpAttempts + 1 }
+            });
+
             throw new AppError(httpStatus.BAD_REQUEST, `Invalid verification code. ${4 - pendingUser.otpAttempts} attempts remaining.`);
         }
 
@@ -126,7 +148,7 @@ const verifyOTPAndCreateUser = async (email, otp) => {
         const session = await mongoose.startSession();
         try {
             await session.withTransaction(async () => {
-                const userData = pendingUser.toObject();
+                const userData = { ...pendingUser };
                 delete userData.otp;
                 delete userData.otpAttempts;
                 delete userData.expiresAt;
@@ -165,11 +187,14 @@ const login = async (identifier, password) => {
     const normalizedIdentifier = identifier.toLowerCase();
     
     // Check if identifier is email or username
-    const user = normalizedIdentifier.includes('@') 
-        ? await User.findOne({ email: normalizedIdentifier }) 
-        : await User.findOne({ username: normalizedIdentifier });
+    // Use selective projection to get only what's needed for login and the response
+    const query = normalizedIdentifier.includes('@') 
+        ? { email: normalizedIdentifier } 
+        : { username: normalizedIdentifier };
+    
+    const user = await User.findOne(query).select('+password').lean();
 
-    const isMatch = user ? await user.isPasswordMatch(password) : false;
+    const isMatch = user ? await bcrypt.compare(password, user.password) : false;
 
     // Timing attack protection: even if user doesn't exist, we've already done a bcrypt comparison if user was found.
     // If user was NOT found, we do a dummy comparison to normalize response time.
