@@ -6,7 +6,7 @@ const User = require('../models/user.model');
  * @returns {Promise<User>}
  */
 const getUserByEmail = async (email) => {
-    return User.findOne({ email }).lean();
+    return User.findOne({ email }).select('-password').lean();
 };
 
 /**
@@ -15,7 +15,7 @@ const getUserByEmail = async (email) => {
  * @returns {Promise<User>}
  */
 const getUserById = async (id) => {
-    return User.findById(id).lean();
+    return User.findById(id).select('-password').lean();
 };
 
 /**
@@ -24,7 +24,7 @@ const getUserById = async (id) => {
  * @returns {Promise<User>}
  */
 const getUserByUsername = async (username) => {
-    return User.findOne({ username }).lean();
+    return User.findOne({ username }).select('-password').lean();
 };
 
 /**
@@ -62,7 +62,17 @@ const updateUserById = async (userId, updateBody) => {
  * @returns {Promise<User>}
  */
 const getUserByVerificationToken = async (token) => {
-    return User.findOne({ verificationToken: token });
+    return User.findOne({ verificationToken: token }).select('-password').lean();
+};
+
+/**
+ * Get user specifically for session validation
+ * Optimized projection: only fetch what's needed for middleware (role, tokenVersion)
+ * @param {ObjectId} id
+ * @returns {Promise<Object>}
+ */
+const getUserForSession = async (id) => {
+    return User.findById(id).select('role tokenVersion').lean();
 };
 
 module.exports = {
@@ -72,4 +82,5 @@ module.exports = {
     createUser,
     updateUserById,
     getUserByVerificationToken,
+    getUserForSession,
 };

@@ -4,6 +4,7 @@ const userRepository = require('../repositories/user.repository');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const { ROLES } = require('../constants');
+const RequestContext = require('../utils/context');
 
 /**
  * Middleware to authenticate and authorize for USER role only
@@ -20,7 +21,8 @@ const userAuth = catchAsync(async (req, res, next) => {
 
     try {
         const payload = tokenService.verifyToken(token);
-        const user = await userRepository.getUserById(payload.sub);
+        // Only fetch required fields: role and tokenVersion
+        const user = await userRepository.getUserForSession(payload.sub);
 
         if (!user) {
             throw new AppError(httpStatus.UNAUTHORIZED, 'User not found');
@@ -37,6 +39,7 @@ const userAuth = catchAsync(async (req, res, next) => {
         }
 
         req.user = user;
+        RequestContext.set('userId', user._id);
         next();
     } catch (error) {
         throw new AppError(httpStatus.UNAUTHORIZED, 'Please authenticate');
