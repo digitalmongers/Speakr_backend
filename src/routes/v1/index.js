@@ -1,6 +1,7 @@
 const express = require('express');
 const uploadRoutes = require('./upload.routes');
 const authRoutes = require('./auth.routes');
+const postRoutes = require('./post.routes');
 
 const router = express.Router();
 
@@ -11,5 +12,6 @@ router.get('/health', (req, res) => {
 
 router.use('/upload', uploadRoutes);
 router.use('/auth', authRoutes);
+router.use('/posts', postRoutes);
 
 module.exports = router;
