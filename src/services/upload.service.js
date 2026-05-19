@@ -1,18 +1,28 @@
 const { DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl: awsGetSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const s3Client = require('../configs/s3.config');
+const cloudinaryClient = require('../configs/cloudinary.config');
 const env = require('../configs/env');
 const Logger = require('../utils/logger');
 const AppError = require('../utils/AppError');
 
+const getStorageProvider = () => {
+    if (s3Client && env.AWS_S3_BUCKET_NAME) {
+        return 's3';
+    } else if (cloudinaryClient) {
+        return 'cloudinary';
+    }
+    return null;
+};
+
 class UploadService {
     /**
-     * Map multer-s3 response to our clean API format.
+     * Map upload response to our clean API format.
      */
     static buildFileResponse(file) {
         return {
-            url: file.location, // S3 Object URL
-            key: file.key,     // S3 Object Key
+            url: file.location, // S3 Object URL / Cloudinary Secure URL
+            key: file.key,     // S3 Object Key / Cloudinary Public ID
             size: file.size,
             mimeType: file.mimetype,
             originalName: file.originalname
@@ -20,48 +30,81 @@ class UploadService {
     }
 
     /**
-     * Delete an object from S3 by its key
+     * Delete an object from the active storage provider by its key
      */
     static async deleteFromS3(key) {
-        if (!s3Client) throw new AppError(503, 'AWS S3 is not configured on the server');
-        if (!key) throw new AppError(400, 'S3 object key is required for deletion');
+        if (!key) throw new AppError(400, 'File key is required for deletion');
 
-        const params = {
-            Bucket: env.AWS_S3_BUCKET_NAME,
-            Key: key
-        };
+        const provider = getStorageProvider();
+        if (!provider) throw new AppError(503, 'No storage provider configured on the server');
 
-        try {
-            await s3Client.send(new DeleteObjectCommand(params));
-            Logger.info('S3 Object deleted', { key });
-            return true;
-        } catch (error) {
-            Logger.error('S3 Deletion failed', { key, error: error.message });
-            // Don't throw if we just want to suppress deletion errors, but throwing is safer for strictness
-            throw new AppError(500, 'Failed to delete file from S3');
+        if (provider === 's3') {
+            const params = {
+                Bucket: env.AWS_S3_BUCKET_NAME,
+                Key: key
+            };
+
+            try {
+                await s3Client.send(new DeleteObjectCommand(params));
+                Logger.info('S3 Object deleted', { key });
+                return true;
+            } catch (error) {
+                Logger.error('S3 Deletion failed', { key, error: error.message });
+                throw new AppError(500, 'Failed to delete file from S3');
+            }
+        } else {
+            // Cloudinary deletion
+            try {
+                // Determine resource type based on key path (e.g. uploads/audio/... -> video, uploads/images/... -> image)
+                const resourceType = key.includes('audio') ? 'video' : 'image';
+                const result = await cloudinaryClient.uploader.destroy(key, { resource_type: resourceType });
+                
+                if (result.result === 'not_found') {
+                    Logger.warn('Cloudinary object not found during deletion', { key });
+                } else if (result.result !== 'ok') {
+                    throw new Error(`Cloudinary returned: ${result.result}`);
+                }
+
+                Logger.info('Cloudinary Object deleted', { key, resourceType });
+                return true;
+            } catch (error) {
+                Logger.error('Cloudinary Deletion failed', { key, error: error.message });
+                throw new AppError(500, `Failed to delete file from Cloudinary: ${error.message}`);
+            }
         }
     }
 
     /**
-     * Generate a presigned URL to securely access a private bucket object
+     * Generate access URL to securely access the resource
      */
     static async getSignedUrl(key, expiresIn = env.AWS_S3_SIGNED_URL_EXPIRES) {
-        if (!s3Client) throw new AppError(503, 'AWS S3 is not configured on the server');
-        if (!key) throw new AppError(400, 'S3 object key is required for signed URL generation');
+        if (!key) throw new AppError(400, 'File key is required for URL generation');
 
-        const params = {
-            Bucket: env.AWS_S3_BUCKET_NAME,
-            Key: key
-        };
+        const provider = getStorageProvider();
+        if (!provider) throw new AppError(503, 'No storage provider configured on the server');
 
-        try {
-            const command = new GetObjectCommand(params);
-            const signedUrl = await awsGetSignedUrl(s3Client, command, { expiresIn });
-            Logger.info('Signed URL generated', { key, expiresIn });
+        if (provider === 's3') {
+            const params = {
+                Bucket: env.AWS_S3_BUCKET_NAME,
+                Key: key
+            };
+
+            try {
+                const command = new GetObjectCommand(params);
+                const signedUrl = await awsGetSignedUrl(s3Client, command, { expiresIn });
+                Logger.info('S3 Signed URL generated', { key, expiresIn });
+                return signedUrl;
+            } catch (error) {
+                Logger.error('Failed to generate S3 Signed URL', { key, error: error.message });
+                throw new AppError(500, 'Failed to generate access URL');
+            }
+        } else {
+            // Cloudinary direct secure URL
+            const resourceType = key.includes('audio') ? 'video' : 'image';
+            const cloudName = env.CLOUDINARY_CLOUD_NAME;
+            const signedUrl = `https://res.cloudinary.com/${cloudName}/${resourceType}/upload/${key}`;
+            Logger.info('Cloudinary URL generated', { key });
             return signedUrl;
-        } catch (error) {
-            Logger.error('Failed to generate Signed URL', { key, error: error.message });
-            throw new AppError(500, 'Failed to generate access URL');
         }
     }
 }

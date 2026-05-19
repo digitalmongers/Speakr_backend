@@ -20,6 +20,11 @@ const envSchema = z.object({
     AWS_REGION: z.string().optional().default(''),
     AWS_S3_BUCKET_NAME: z.string().optional().default(''),
     AWS_S3_SIGNED_URL_EXPIRES: z.string().transform(Number).default('3600'),
+
+    // Cloudinary Configuration
+    CLOUDINARY_CLOUD_NAME: z.string().optional().default(''),
+    CLOUDINARY_API_KEY: z.string().optional().default(''),
+    CLOUDINARY_API_SECRET: z.string().optional().default(''),
     
     // Redis Configuration
     REDIS_URL: z.string().default('redis://127.0.0.1:6379'),
