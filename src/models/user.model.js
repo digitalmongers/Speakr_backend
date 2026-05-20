@@ -70,6 +70,21 @@ const userSchema = mongoose.Schema(
             default: 0,
             select: false, // hidden unless explicitly requested
         },
+        bio: {
+  type: String,
+  default: "",
+  maxlength: 150,
+},
+
+city: {
+  type: String,
+  default: "",
+},
+
+profilePic: {
+  type: String,
+  default: "",
+},
     },
     {
         timestamps: true,
