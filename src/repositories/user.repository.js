@@ -75,6 +75,40 @@ const getUserForSession = async (id) => {
     return User.findById(id).select('role tokenVersion').lean();
 };
 
+const getPublicProfile = async (userId) => {
+  return User.findOne(
+    { _id: userId },
+    {
+      firstName: 1,
+      lastName: 1,
+      username: 1,
+      bio: 1,
+      city: 1,
+      profilePic: 1,
+      _id: 0,
+    }
+  ).lean();
+};
+
+const updateProfile = async (
+  userId,
+  updateData
+) => {
+  return User.findByIdAndUpdate(
+    userId,
+    {
+      $set: updateData,
+    },
+    {
+      new: true,
+      runValidators: true,
+      select:
+        "firstName lastName username bio gender city profilePic",
+    }
+  ).lean();
+};
+
+
 module.exports = {
     getUserByEmail,
     getUserById,
@@ -83,4 +117,6 @@ module.exports = {
     updateUserById,
     getUserByVerificationToken,
     getUserForSession,
+    getPublicProfile,
+    updateProfile,
 };
