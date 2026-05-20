@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const httpStatus = require('http-status');
+const httpStatus = require('http-status').default;
 const postRepository = require('../repositories/post.repository');
 const likeRepository = require('../repositories/like.repository');
 const AppError = require('../utils/AppError');

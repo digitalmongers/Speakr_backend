@@ -3,7 +3,7 @@ const userRepository = require('../repositories/user.repository');
 const UploadService = require('./upload.service');
 const AppError = require('../utils/AppError');
 const Logger = require('../utils/logger');
-const httpStatus = require('http-status');
+const httpStatus = require('http-status').default;
 
 /**
  * Create a new audio post

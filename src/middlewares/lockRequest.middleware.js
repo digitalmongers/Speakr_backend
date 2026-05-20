@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const httpStatus = require('http-status');
+const httpStatus = require('http-status').default;
 const { redisClient } = require('../configs/redis');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
