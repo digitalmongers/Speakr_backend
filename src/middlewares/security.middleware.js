@@ -8,12 +8,7 @@ const AppError = require('../utils/AppError');
 const Logger = require('../utils/logger');
 const env = require('../configs/env');
 
-/**
- * Helper to create rate limiters
- * @param {number} max - Max requests
- * @param {number} windowMinutes - Time window in minutes
- * @param {string} message - Error message
- */
+
 const createLimiter = (max, windowMinutes, message) => {
     return rateLimit({
         max,
@@ -29,7 +24,7 @@ const createLimiter = (max, windowMinutes, message) => {
     });
 };
 
-// General API Limiter (100 requests per 15 minutes per IP)
+
 const apiLimiter = createLimiter(100, 15, 'General API rate limit exceeded.');
 
 // More stringent limiter for specific sensitive endpoints
@@ -142,9 +137,9 @@ const configureSecurity = (app) => {
 
     // Apply General API Limiter
     app.use('/api', apiLimiter);
-    
+
     // Example: Applying strict limiter specifically to contact form or other sensitive public endpoints
-    app.use('/api/v1/contact', strictLimiter); 
+    app.use('/api/v1/contact', strictLimiter);
 };
 
 module.exports = {
