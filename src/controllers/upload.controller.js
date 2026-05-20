@@ -1,4 +1,4 @@
-const httpStatus = require('http-status');
+const httpStatus = require('http-status').default;
 const catchAsync = require('../utils/catchAsync');
 const UploadService = require('../services/upload.service');
 const AppError = require('../utils/AppError');
