@@ -126,7 +126,11 @@ userSchema.methods.isPasswordMatch = async function (password) {
 userSchema.pre('save', async function (next) {
     const user = this;
     if (user.isModified('password')) {
-        user.password = await bcrypt.hash(user.password, 12);
+        // Prevent double hashing if the password is already a bcrypt hash
+        const isBcrypt = user.password && user.password.startsWith('$2') && user.password.length === 60;
+        if (!isBcrypt) {
+            user.password = await bcrypt.hash(user.password, 12);
+        }
     }
     next();
 });

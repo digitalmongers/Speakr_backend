@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const httpStatus = require('http-status');
+const httpStatus = require('http-status').default;
 const bcrypt = require('bcryptjs');
 const userRepository = require('../repositories/user.repository');
 const tokenService = require('./token.service');

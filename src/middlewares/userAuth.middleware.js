@@ -1,4 +1,4 @@
-const httpStatus = require('http-status');
+const httpStatus = require('http-status').default;
 const tokenService = require('../services/token.service');
 const userRepository = require('../repositories/user.repository');
 const AppError = require('../utils/AppError');
