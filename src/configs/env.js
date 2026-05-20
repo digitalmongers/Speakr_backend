@@ -15,6 +15,11 @@ const envSchema = z.object({
     MAILGUN_API_KEY: z.string().optional(),
     MAILGUN_DOMAIN: z.string().optional(),
     MAILGUN_HOST: z.string().default('api.mailgun.net'), // 'api.eu.mailgun.net' for EU
+
+    // Brevo Configuration (Fallback)
+    BREVO_API_KEY: z.string().optional(),
+    BREVO_FROM_EMAIL: z.string().email().optional().or(z.literal('')),
+    BREVO_FROM_NAME: z.string().default('Speakr').or(z.literal('')),
     AWS_ACCESS_KEY_ID: z.string().optional().default(''),
     AWS_SECRET_ACCESS_KEY: z.string().optional().default(''),
     AWS_REGION: z.string().optional().default(''),
