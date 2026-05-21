@@ -14,11 +14,15 @@ const optionalAuthMiddleware =
 const userAuthMiddleware =
   require("../../middlewares/userAuth.middleware");
 
+const lockRequest =
+  require("../../middlewares/lockRequest.middleware");
+
 const validate =
   require("../../middlewares/validate.middleware");
 
 const {
   updateProfileValidation,
+  getPublicProfileValidation,
 } = require("../../validations/user.validation");
 
 router.get(
@@ -30,14 +34,18 @@ router.get(
 router.get(
   "/:userId/profile",
   optionalAuthMiddleware,
+  validate(getPublicProfileValidation),
   getPublicProfile
 );
 
 router.patch(
-  "/profile",
+  "/me/profile",
   userAuthMiddleware,
+  lockRequest, // Prevent concurrent duplicate updates & storage purge race conditions
   validate(updateProfileValidation),
   updateProfile
 );
 
 module.exports = router;
+
+
