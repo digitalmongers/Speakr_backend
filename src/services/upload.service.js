@@ -30,6 +30,45 @@ class UploadService {
     }
 
     /**
+     * Extract storage key from a full S3 or Cloudinary URL.
+     * Returns the key directly if it is not a URL.
+     */
+    static extractKeyFromUrl(fileUrl) {
+        if (!fileUrl || typeof fileUrl !== 'string') return null;
+        if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://')) {
+            return fileUrl;
+        }
+
+        try {
+            const urlObj = new URL(fileUrl);
+            
+            // 1. Cloudinary URL Parsing
+            if (urlObj.hostname.includes('cloudinary.com')) {
+                const pathParts = urlObj.pathname.split('/');
+                const uploadIndex = pathParts.indexOf('upload');
+                if (uploadIndex !== -1 && uploadIndex + 1 < pathParts.length) {
+                    let keyParts = pathParts.slice(uploadIndex + 1);
+                    // Check if first part is a version tag (e.g. v1716262400)
+                    if (keyParts[0].match(/^v\d+$/)) {
+                        keyParts = keyParts.slice(1);
+                    }
+                    return keyParts.join('/');
+                }
+            }
+            
+            
+            if (urlObj.hostname.includes('amazonaws.com')) {
+                return decodeURIComponent(urlObj.pathname.slice(1));
+            }
+
+            
+            return decodeURIComponent(urlObj.pathname.slice(1));
+        } catch (error) {
+            return fileUrl;
+        }
+    }
+
+    /**
      * Delete an object from the active storage provider by its key
      */
     static async deleteFromS3(key) {

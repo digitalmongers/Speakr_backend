@@ -74,6 +74,25 @@ const deleteById = async (id) => {
     return Post.findByIdAndDelete(id).lean();
 };
 
+/**
+ * Update post likes and/or dislikes count atomically
+ * @param {ObjectId} id
+ * @param {number} likeInc
+ * @param {number} dislikeInc
+ * @param {ClientSession} [session] - Optional Mongoose session for transaction scope
+ * @returns {Promise<Object|null>}
+ */
+const updateLikesAndDislikesCount = async (id, likeInc, dislikeInc, session = null) => {
+    const update = {};
+    if (likeInc !== 0) update.likesCount = likeInc;
+    if (dislikeInc !== 0) update.dislikesCount = dislikeInc;
+    return Post.findByIdAndUpdate(
+        id,
+        { $inc: update },
+        { new: true, session }
+    ).lean();
+};
+
 module.exports = {
     create,
     findById,
@@ -81,4 +100,5 @@ module.exports = {
     findWithCursor,
     count,
     deleteById,
+    updateLikesAndDislikesCount,
 };

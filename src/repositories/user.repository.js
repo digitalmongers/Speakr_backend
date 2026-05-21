@@ -76,28 +76,33 @@ const getUserForSession = async (id) => {
 };
 
 const getPublicProfile = async (userId) => {
-  return User.findOne(
-    { _id: userId },
-    {
-      firstName: 1,
-      lastName: 1,
-      username: 1,
-      bio: 1,
-      city: 1,
-      profilePic: 1,
-      _id: 0,
-    }
-  ).lean();
+  return User.findById(userId)
+    .select('firstName lastName username bio city profilePic _id')
+    .lean();
+};
+
+const getPrivateProfile = async (userId) => {
+  return User.findById(userId)
+    .select('-password -tokenVersion')
+    .lean();
 };
 
 const updateProfile = async (
   userId,
   updateData
 ) => {
+  // Sanitize input to prevent sensitive/internal fields from being updated here
+  const safeUpdate = { ...updateData };
+  delete safeUpdate.role;
+  delete safeUpdate.email;
+  delete safeUpdate.password;
+  delete safeUpdate.isEmailVerified;
+  delete safeUpdate.tokenVersion;
+
   return User.findByIdAndUpdate(
     userId,
     {
-      $set: updateData,
+      $set: safeUpdate,
     },
     {
       new: true,
@@ -118,5 +123,7 @@ module.exports = {
     getUserByVerificationToken,
     getUserForSession,
     getPublicProfile,
+    getPrivateProfile,
     updateProfile,
 };
+

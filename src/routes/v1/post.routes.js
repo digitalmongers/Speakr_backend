@@ -5,6 +5,7 @@ const lockRequest = require('../../middlewares/lockRequest.middleware');
 const { cacheMiddleware } = require('../../middlewares/cache.middleware');
 const postValidation = require('../../validations/post.validation');
 const postController = require('../../controllers/post.controller');
+const likeController = require('../../controllers/like.controller');
 
 const router = express.Router();
 
@@ -39,6 +40,30 @@ router.get(
     userAuth,
     validate(postValidation.queryPosts),
     postController.getMyPosts
+);
+
+/**
+ * Endpoint: Toggle Like on Post
+ * Restricted to authenticated users
+ */
+router.post(
+    '/:postId/like',
+    userAuth,
+    lockRequest, // Block concurrent duplicate like attempts
+    validate(postValidation.getPost),
+    likeController.toggleLike
+);
+
+/**
+ * Endpoint: Toggle Dislike on Post
+ * Restricted to authenticated users
+ */
+router.post(
+    '/:postId/dislike',
+    userAuth,
+    lockRequest, // Block concurrent duplicate dislike attempts
+    validate(postValidation.getPost),
+    likeController.toggleDislike
 );
 
 /**
