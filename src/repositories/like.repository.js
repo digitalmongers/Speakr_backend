@@ -43,9 +43,20 @@ const exists = async (postId, userId) => {
     return count > 0;
 };
 
+/**
+ * Find likes by post IDs for a specific user
+ * @param {Array<ObjectId>} postIds
+ * @param {ObjectId} userId
+ * @returns {Promise<Array<Object>>}
+ */
+const findByUserAndPostIds = async (postIds, userId) => {
+    return Like.find({ user: userId, post: { $in: postIds } }).select('post').lean();
+};
+
 module.exports = {
     findOneByPostAndUser,
     create,
     deleteById,
     exists,
+    findByUserAndPostIds,
 };

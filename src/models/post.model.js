@@ -79,6 +79,16 @@ const postSchema = new mongoose.Schema(
             default: 0,
             min: 0,
         },
+        savesCount: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        listensCount: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
     },
     {
         timestamps: true,
@@ -94,7 +104,10 @@ postSchema.index({ createdAt: -1 });
 // Full-Text Search Index for Blazing-Fast Global Search (relevance ranked)
 postSchema.index(
     { title: 'text', description: 'text', category: 'text', language: 'text' },
-    { weights: { title: 10, description: 3, category: 2, language: 1 } }
+    { 
+        weights: { title: 10, description: 3, category: 2, language: 1 },
+        language_override: 'none'
+    }
 );
 
 const Post = mongoose.model('Post', postSchema);

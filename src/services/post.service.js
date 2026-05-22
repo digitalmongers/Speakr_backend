@@ -1,5 +1,9 @@
 const postRepository = require('../repositories/post.repository');
 const userRepository = require('../repositories/user.repository');
+const likeRepository = require('../repositories/like.repository');
+const dislikeRepository = require('../repositories/dislike.repository');
+const savedPostRepository = require('../repositories/savedPost.repository');
+const listenRepository = require('../repositories/listen.repository');
 const UploadService = require('./upload.service');
 const AppError = require('../utils/AppError');
 const Logger = require('../utils/logger');
@@ -30,13 +34,33 @@ const createPost = async (userId, postData) => {
 /**
  * Retrieve a post by ID
  * @param {ObjectId} postId
+ * @param {ObjectId} [userId]
  * @returns {Promise<Object>}
  */
-const getPostById = async (postId) => {
+const getPostById = async (postId, userId = null) => {
     const post = await postRepository.findById(postId);
     if (!post) {
         throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
     }
+
+    if (userId) {
+        const [isLiked, isDisliked, isSaved, isListened] = await Promise.all([
+            likeRepository.exists(postId, userId),
+            dislikeRepository.exists(postId, userId),
+            savedPostRepository.exists(postId, userId),
+            listenRepository.existsByUser(postId, userId)
+        ]);
+        post.isLiked = isLiked;
+        post.isDisliked = isDisliked;
+        post.isSaved = isSaved;
+        post.isListened = isListened;
+    } else {
+        post.isLiked = false;
+        post.isDisliked = false;
+        post.isSaved = false;
+        post.isListened = false;
+    }
+
     return post;
 };
 
@@ -47,9 +71,48 @@ const getPostById = async (postId) => {
  * @param {number} [paginationOptions.page]
  * @param {number} paginationOptions.limit
  * @param {string} [paginationOptions.cursor]
+ * @param {ObjectId} [userId] - Optional authenticated user ID for reaction status hydration
  * @returns {Promise<Object>}
  */
-const queryPosts = async (filter, { page, limit = 10, cursor }) => {
+const queryPosts = async (filter, { page, limit = 10, cursor }, userId = null) => {
+    // Helper function to hydrate a list of posts in bulk (N+1 query optimization)
+    const hydratePosts = async (postsList) => {
+        if (!postsList || postsList.length === 0) return postsList;
+        
+        if (!userId) {
+            postsList.forEach(post => {
+                post.isLiked = false;
+                post.isDisliked = false;
+                post.isSaved = false;
+                post.isListened = false;
+            });
+            return postsList;
+        }
+
+        const postIds = postsList.map(post => post._id);
+        const [likes, dislikes, saves, listens] = await Promise.all([
+            likeRepository.findByUserAndPostIds(postIds, userId),
+            dislikeRepository.findByUserAndPostIds(postIds, userId),
+            savedPostRepository.findByUserAndPostIds(postIds, userId),
+            listenRepository.findByUserAndPostIds(postIds, userId)
+        ]);
+
+        const likedPostIdsSet = new Set(likes.map(l => l.post.toString()));
+        const dislikedPostIdsSet = new Set(dislikes.map(d => d.post.toString()));
+        const savedPostIdsSet = new Set(saves.map(s => s.post.toString()));
+        const listenedPostIdsSet = new Set(listens.map(li => li.post.toString()));
+
+        postsList.forEach(post => {
+            const postIdStr = post._id.toString();
+            post.isLiked = likedPostIdsSet.has(postIdStr);
+            post.isDisliked = dislikedPostIdsSet.has(postIdStr);
+            post.isSaved = savedPostIdsSet.has(postIdStr);
+            post.isListened = listenedPostIdsSet.has(postIdStr);
+        });
+
+        return postsList;
+    };
+
     // If cursor is provided or page is not provided, use Cursor-Based pagination (Infinite Scroll optimized)
     if (cursor !== undefined || !page) {
         const posts = await postRepository.findWithCursor(filter, { limit, cursor });
@@ -64,6 +127,8 @@ const queryPosts = async (filter, { page, limit = 10, cursor }) => {
             // Trim the array to the requested limit
             posts.splice(limit);
         }
+
+        await hydratePosts(posts);
 
         return {
             results: posts,
@@ -80,6 +145,8 @@ const queryPosts = async (filter, { page, limit = 10, cursor }) => {
         postRepository.find(filter, { limit, skip }),
         postRepository.count(filter),
     ]);
+
+    await hydratePosts(posts);
 
     const totalPages = Math.ceil(totalResults / limit);
 
