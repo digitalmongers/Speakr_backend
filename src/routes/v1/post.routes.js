@@ -1,11 +1,14 @@
 const express = require('express');
 const validate = require('../../middlewares/validate.middleware');
 const userAuth = require('../../middlewares/userAuth.middleware');
+const optionalAuth = require('../../middlewares/optionalAuth.middleware');
 const lockRequest = require('../../middlewares/lockRequest.middleware');
 const { cacheMiddleware } = require('../../middlewares/cache.middleware');
 const postValidation = require('../../validations/post.validation');
 const postController = require('../../controllers/post.controller');
 const likeController = require('../../controllers/like.controller');
+const savedPostController = require('../../controllers/savedPost.controller');
+const listenController = require('../../controllers/listen.controller');
 
 const router = express.Router();
 
@@ -27,6 +30,7 @@ router.post(
  */
 router.get(
     '/',
+    optionalAuth,
     validate(postValidation.queryPosts),
     postController.queryPosts
 );
@@ -40,6 +44,17 @@ router.get(
     userAuth,
     validate(postValidation.queryPosts),
     postController.getMyPosts
+);
+
+/**
+ * Endpoint: Get Current User's Saved Posts
+ * Restricted to authenticated users
+ */
+router.get(
+    '/me/saved',
+    userAuth,
+    validate(postValidation.queryPosts),
+    savedPostController.getMySavedPosts
 );
 
 /**
@@ -67,11 +82,36 @@ router.post(
 );
 
 /**
+ * Endpoint: Toggle Save on Post
+ * Restricted to authenticated users
+ */
+router.post(
+    '/:postId/save',
+    userAuth,
+    lockRequest, // Block concurrent duplicate save attempts
+    validate(postValidation.getPost),
+    savedPostController.toggleSave
+);
+
+/**
+ * Endpoint: Record Unique Listen on Post
+ * Accessible to authenticated users and guests (optional authentication)
+ */
+router.post(
+    '/:postId/listen',
+    optionalAuth,
+    lockRequest, // Block concurrent duplicate listen attempts
+    validate(postValidation.getPost),
+    listenController.recordListen
+);
+
+/**
  * Endpoint: Get Single Post Details
  * Accessible publicly
  */
 router.get(
     '/:postId',
+    optionalAuth,
     validate(postValidation.getPost),
     postController.getPost
 );

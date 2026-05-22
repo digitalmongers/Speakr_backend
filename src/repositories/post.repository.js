@@ -93,6 +93,35 @@ const updateLikesAndDislikesCount = async (id, likeInc, dislikeInc, session = nu
     ).lean();
 };
 
+/**
+ * Update post saves count atomically
+ * @param {ObjectId} id
+ * @param {number} saveInc
+ * @param {ClientSession} [session] - Optional Mongoose session for transaction scope
+ * @returns {Promise<Object|null>}
+ */
+const updateSavesCount = async (id, saveInc, session = null) => {
+    return Post.findByIdAndUpdate(
+        id,
+        { $inc: { savesCount: saveInc } },
+        { new: true, session }
+    ).lean();
+};
+
+/**
+ * Increment post listens count atomically
+ * @param {ObjectId} id
+ * @param {ClientSession} [session] - Optional Mongoose session for transaction scope
+ * @returns {Promise<Object|null>}
+ */
+const incrementListensCount = async (id, session = null) => {
+    return Post.findByIdAndUpdate(
+        id,
+        { $inc: { listensCount: 1 } },
+        { new: true, session }
+    ).lean();
+};
+
 module.exports = {
     create,
     findById,
@@ -101,4 +130,6 @@ module.exports = {
     count,
     deleteById,
     updateLikesAndDislikesCount,
+    updateSavesCount,
+    incrementListensCount,
 };

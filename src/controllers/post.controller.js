@@ -33,7 +33,8 @@ const createPost = catchAsync(async (req, res) => {
  * Controller to fetch post details by ID
  */
 const getPost = catchAsync(async (req, res) => {
-    const post = await postService.getPostById(req.params.postId);
+    const userId = req.user ? req.user._id : null;
+    const post = await postService.getPostById(req.params.postId, userId);
 
     // Sanitize internal keys to prevent storage detail leakage
     const postObj = { ...post };
@@ -74,7 +75,8 @@ const queryPosts = catchAsync(async (req, res) => {
         }
     }
 
-    const result = await postService.queryPosts(filter, { page, limit, cursor });
+    const userId = req.user ? req.user._id : null;
+    const result = await postService.queryPosts(filter, { page, limit, cursor }, userId);
 
     res.status(httpStatus.OK).json({
         status: 'success',
@@ -108,7 +110,8 @@ const getMyPosts = catchAsync(async (req, res) => {
         }
     }
 
-    const result = await postService.queryPosts(filter, { page, limit, cursor });
+    const userId = req.user ? req.user._id : null;
+    const result = await postService.queryPosts(filter, { page, limit, cursor }, userId);
 
     res.status(httpStatus.OK).json({
         status: 'success',
