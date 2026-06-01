@@ -122,6 +122,34 @@ const incrementListensCount = async (id, session = null) => {
     ).lean();
 };
 
+/**
+ * Increment post comments count atomically
+ * @param {ObjectId} id
+ * @param {ClientSession} [session] - Optional Mongoose session for transaction scope
+ * @returns {Promise<Object|null>}
+ */
+const incrementCommentsCount = async (id, session = null) => {
+    return Post.findByIdAndUpdate(
+        id,
+        { $inc: { commentsCount: 1 } },
+        { new: true, session }
+    ).lean();
+};
+
+/**
+ * Decrement post comments count atomically
+ * @param {ObjectId} id
+ * @param {ClientSession} [session] - Optional Mongoose session for transaction scope
+ * @returns {Promise<Object|null>}
+ */
+const decrementCommentsCount = async (id, session = null) => {
+    return Post.findByIdAndUpdate(
+        id,
+        { $inc: { commentsCount: -1 } },
+        { new: true, session }
+    ).lean();
+};
+
 module.exports = {
     create,
     findById,
@@ -132,4 +160,6 @@ module.exports = {
     updateLikesAndDislikesCount,
     updateSavesCount,
     incrementListensCount,
+    incrementCommentsCount,
+    decrementCommentsCount,
 };
