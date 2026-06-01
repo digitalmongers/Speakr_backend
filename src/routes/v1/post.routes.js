@@ -5,10 +5,15 @@ const optionalAuth = require('../../middlewares/optionalAuth.middleware');
 const lockRequest = require('../../middlewares/lockRequest.middleware');
 const { cacheMiddleware } = require('../../middlewares/cache.middleware');
 const postValidation = require('../../validations/post.validation');
+const commentValidation = require('../../validations/comment.validation');
 const postController = require('../../controllers/post.controller');
 const likeController = require('../../controllers/like.controller');
 const savedPostController = require('../../controllers/savedPost.controller');
 const listenController = require('../../controllers/listen.controller');
+const commentController = require('../../controllers/comment.controller');
+const commentReplyController = require('../../controllers/commentReply.controller');
+const commentReplyValidation = require('../../validations/commentReply.validation');
+const { uploadAudio, multerErrorHandler } = require('../../middlewares/upload.middleware');
 
 const router = express.Router();
 
@@ -126,6 +131,78 @@ router.delete(
     lockRequest, // Prevent concurrent delete attempts
     validate(postValidation.getPost),
     postController.deletePost
+);
+
+/**
+ * Endpoint: Add Comment on Post
+ * Restricted to authenticated users
+ */
+router.post(
+    '/:postId/comments',
+    userAuth,
+    lockRequest, // Block concurrent duplicate comment submissions
+    validate(commentValidation.addComment),
+    commentController.addComment
+);
+
+/**
+ * Endpoint: Get Comments on Post
+ * Accessible publicly with optional auth hydration
+ */
+router.get(
+    '/:postId/comments',
+    optionalAuth,
+    validate(commentValidation.getComments),
+    commentController.getComments
+);
+
+/**
+ * Endpoint: Delete Comment on Post
+ * Restricted to comment owner
+ */
+router.delete(
+    '/:postId/comments/:commentId',
+    userAuth,
+    lockRequest, // Prevent concurrent duplicate delete actions
+    validate(commentValidation.deleteComment),
+    commentController.deleteComment
+);
+
+/**
+ * Endpoint: Add Audio Reply to Comment
+ * Restricted to authenticated users, uploads audio first
+ */
+router.post(
+    '/:postId/comments/:commentId/replies',
+    userAuth,
+    lockRequest, // Prevent concurrent duplicate reply submissions
+    uploadAudio.single('file'),
+    multerErrorHandler,
+    validate(commentReplyValidation.addReply),
+    commentReplyController.addReply
+);
+
+/**
+ * Endpoint: Get Audio Replies for Comment
+ * Accessible publicly
+ */
+router.get(
+    '/:postId/comments/:commentId/replies',
+    optionalAuth,
+    validate(commentReplyValidation.getReplies),
+    commentReplyController.getReplies
+);
+
+/**
+ * Endpoint: Delete Audio Reply on Comment
+ * Restricted to reply owner
+ */
+router.delete(
+    '/:postId/comments/:commentId/replies/:replyId',
+    userAuth,
+    lockRequest, // Prevent concurrent duplicate delete actions
+    validate(commentReplyValidation.deleteReply),
+    commentReplyController.deleteReply
 );
 
 module.exports = router;
