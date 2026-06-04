@@ -58,6 +58,12 @@ const postSchema = new mongoose.Schema(
             required: true,
             default: false,
         },
+        duration: {
+            type: Number,
+            required: [true, 'Audio duration is required'],
+            min: [0, 'Duration cannot be negative'],
+            default: 0,
+        },
         creator: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
@@ -104,6 +110,7 @@ const postSchema = new mongoose.Schema(
 postSchema.index({ creator: 1, createdAt: -1 });
 postSchema.index({ category: 1, createdAt: -1 });
 postSchema.index({ language: 1, createdAt: -1 });
+postSchema.index({ isKidsContent: 1, createdAt: -1 });
 postSchema.index({ createdAt: -1 });
 
 // Full-Text Search Index for Blazing-Fast Global Search (relevance ranked)

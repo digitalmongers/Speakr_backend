@@ -18,7 +18,9 @@ const cacheMiddleware = (ttlInSeconds = 60) => {
             .map(([key, val]) => `${key}=${val}`)
             .join('&');
             
-        const cacheKey = `cache:${req.baseUrl || req.path}:${sortedQuery}`;
+        // Include user authorization context in cache key to prevent cross-user cache leakage
+        const userScope = req.user ? `user:${req.user._id}` : 'guest';
+        const cacheKey = `cache:${userScope}:${req.baseUrl || req.path}:${sortedQuery}`;
 
         try {
             const cachedData = await redisClient.get(cacheKey);

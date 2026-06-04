@@ -4,6 +4,9 @@ const likeRepository = require('../repositories/like.repository');
 const dislikeRepository = require('../repositories/dislike.repository');
 const savedPostRepository = require('../repositories/savedPost.repository');
 const listenRepository = require('../repositories/listen.repository');
+const commentRepository = require('../repositories/comment.repository');
+const commentReplyRepository = require('../repositories/commentReply.repository');
+const mongoose = require('mongoose');
 const UploadService = require('./upload.service');
 const AppError = require('../utils/AppError');
 const Logger = require('../utils/logger');
@@ -166,36 +169,82 @@ const queryPosts = async (filter, { page, limit = 10, cursor }, userId = null) =
  * @returns {Promise<boolean>}
  */
 const deletePost = async (postId, userId) => {
-    const post = await postRepository.findById(postId);
-    if (!post) {
-        throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
-    }
+    const session = await mongoose.startSession();
+    let postToDelete = null;
+    let s3KeysToDelete = [];
 
-    // Verify creator ownership (strict RBAC check)
-    if (post.creator.toString() !== userId.toString()) {
-        throw new AppError(httpStatus.FORBIDDEN, 'You do not have permission to delete this post');
-    }
-
-    // Storage assets deletion (conforms to Staff-level error-resilient guidelines)
     try {
-        Logger.info('Initiating post asset cleanup from storage', { postId, audioKey: post.audioKey, thumbnailKey: post.thumbnailKey });
-        
-        // Execute storage deletions concurrently
-        await Promise.all([
-            UploadService.deleteFromS3(post.audioKey),
-            UploadService.deleteFromS3(post.thumbnailKey)
-        ]);
-        
-        Logger.info('Post assets purged from storage successfully');
-    } catch (storageError) {
-        // Log failure but proceed with database deletion so records don't get orphaned/stuck.
-        Logger.error('Failure during post asset cleanup, proceeding with DB removal:', { postId, error: storageError.message });
-    }
+        await session.withTransaction(async () => {
+            // 1. Verify post exists
+            const post = await postRepository.findById(postId);
+            if (!post) {
+                throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
+            }
 
-    // Delete post record from DB
-    await postRepository.deleteById(postId);
-    Logger.info('Post removed from database successfully', { postId });
-    return true;
+            // 2. Verify creator ownership (strict RBAC check)
+            if (post.creator.toString() !== userId.toString()) {
+                throw new AppError(httpStatus.FORBIDDEN, 'You do not have permission to delete this post');
+            }
+
+            postToDelete = post;
+
+            // 3. Find and collect comments associated with this post
+            const comments = await commentRepository.findByPostIdRaw(postId, session);
+            const commentIds = comments.map(c => c._id);
+
+            // 4. Find replies to those comments to collect their S3 audioKeys
+            if (commentIds.length > 0) {
+                const replies = await commentReplyRepository.findManyByCommentIds(commentIds, session);
+                const replyAudioKeys = replies.map(r => r.audioKey).filter(Boolean);
+                s3KeysToDelete.push(...replyAudioKeys);
+
+                // 5. Delete replies from DB
+                await commentReplyRepository.deleteManyByCommentIds(commentIds, session);
+            }
+
+            // 6. Delete comments from DB
+            await commentRepository.deleteManyByPostId(postId, session);
+
+            // 7. Delete likes, dislikes, saves, and listens
+            await likeRepository.deleteManyByPostId(postId, session);
+            await dislikeRepository.deleteManyByPostId(postId, session);
+            await savedPostRepository.deleteManyByPostId(postId, session);
+            await listenRepository.deleteManyByPostId(postId, session);
+
+            // 8. Delete the post record from DB
+            await postRepository.deleteById(postId, session);
+
+            Logger.info('Post and all associated comments, replies, and reactions deleted from DB successfully', { postId });
+        });
+
+        // 9. After successful transaction commit, clean up S3 assets
+        if (postToDelete) {
+            // Add post audio and thumbnail keys to deletion queue
+            if (postToDelete.audioKey) s3KeysToDelete.push(postToDelete.audioKey);
+            if (postToDelete.thumbnailKey) s3KeysToDelete.push(postToDelete.thumbnailKey);
+
+            if (s3KeysToDelete.length > 0) {
+                Logger.info('Initiating post and associated comment replies asset cleanup from storage', { postId, keysCount: s3KeysToDelete.length });
+                
+                // Concurrently delete all collected S3 keys
+                await Promise.all(
+                    s3KeysToDelete.map(key => 
+                        UploadService.deleteFromS3(key)
+                            .catch(err => Logger.error(`Failed to delete S3 asset ${key} post-commit:`, err))
+                    )
+                );
+                
+                Logger.info('Post assets purged from storage successfully');
+            }
+        }
+
+        return true;
+    } catch (error) {
+        Logger.error('Error during post deletion transaction:', { postId, userId, error: error.message });
+        throw error;
+    } finally {
+        session.endSession();
+    }
 };
 
 module.exports = {

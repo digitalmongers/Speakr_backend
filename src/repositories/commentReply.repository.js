@@ -80,6 +80,14 @@ const findWithCursor = async (filter, { limit, cursor }) => {
         .lean();
 };
 
+const findManyByCommentIds = async (commentIds, session = null) => {
+    return CommentReply.find({ comment: { $in: commentIds } }).session(session).lean();
+};
+
+const deleteManyByCommentIds = async (commentIds, session = null) => {
+    return CommentReply.deleteMany({ comment: { $in: commentIds } }).session(session);
+};
+
 module.exports = {
     create,
     findByCommentId,
@@ -87,4 +95,6 @@ module.exports = {
     deleteById,
     countByCommentAndUser,
     findWithCursor,
+    findManyByCommentIds,
+    deleteManyByCommentIds,
 };

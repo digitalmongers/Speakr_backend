@@ -99,6 +99,10 @@ const countSavedPosts = async (userId) => {
     return SavedPost.countDocuments({ user: userId });
 };
 
+const deleteManyByPostId = async (postId, session = null) => {
+    return SavedPost.deleteMany({ post: postId }).session(session);
+};
+
 module.exports = {
     findOneByPostAndUser,
     create,
@@ -108,4 +112,5 @@ module.exports = {
     findSavedPostsByUser,
     findSavedPostsByUserWithCursor,
     countSavedPosts,
+    deleteManyByPostId,
 };

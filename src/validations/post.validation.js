@@ -27,6 +27,8 @@ const createPost = {
         isKidsContent: z.enum(['yes', 'no'], {
             required_error: 'Kids content selection (yes/no) is required',
         }).transform((val) => val === 'yes'),
+        duration: z.number({ required_error: 'Audio duration is required' })
+            .nonnegative('Duration cannot be negative'),
     }),
 };
 
