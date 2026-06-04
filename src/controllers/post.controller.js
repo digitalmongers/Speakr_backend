@@ -58,7 +58,8 @@ const queryPosts = catchAsync(async (req, res) => {
     const filter = {};
     if (category) filter.category = category;
     if (language) filter.language = language;
-    if (isKidsContent !== undefined) filter.isKidsContent = isKidsContent;
+    // Default to false (exclude kids content) in general feed if not explicitly requested
+    filter.isKidsContent = isKidsContent !== undefined ? isKidsContent : false;
     if (creator) filter.creator = creator;
 
     // Hybrid Search Optimization: Uses MongoDB Full-Text Index ($text) for O(1) searches on full phrases/words (>= 3 chars),

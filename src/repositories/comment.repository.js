@@ -96,6 +96,14 @@ const findWithCursor = async (filter, { limit, cursor }) => {
         .lean();
 };
 
+const findByPostIdRaw = async (postId, session = null) => {
+    return Comment.find({ post: postId }).session(session).lean();
+};
+
+const deleteManyByPostId = async (postId, session = null) => {
+    return Comment.deleteMany({ post: postId }).session(session);
+};
+
 module.exports = {
     create,
     findByPostId,
@@ -104,4 +112,6 @@ module.exports = {
     incrementAudioRepliesCount,
     decrementAudioRepliesCount,
     findWithCursor,
+    findByPostIdRaw,
+    deleteManyByPostId,
 };

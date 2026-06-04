@@ -70,8 +70,8 @@ const findWithCursor = async (filter, { limit, cursor }) => {
  * @param {ObjectId} id
  * @returns {Promise<Object|null>}
  */
-const deleteById = async (id) => {
-    return Post.findByIdAndDelete(id).lean();
+const deleteById = async (id, session = null) => {
+    return Post.findByIdAndDelete(id).session(session).lean();
 };
 
 /**

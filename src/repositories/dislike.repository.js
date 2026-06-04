@@ -53,10 +53,15 @@ const findByUserAndPostIds = async (postIds, userId) => {
     return Dislike.find({ user: userId, post: { $in: postIds } }).select('post').lean();
 };
 
+const deleteManyByPostId = async (postId, session = null) => {
+    return Dislike.deleteMany({ post: postId }).session(session);
+};
+
 module.exports = {
     findOneByPostAndUser,
     create,
     deleteById,
     exists,
     findByUserAndPostIds,
+    deleteManyByPostId,
 };
