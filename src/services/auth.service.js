@@ -160,6 +160,7 @@ const verifyOTPAndCreateUser = async (email, otp) => {
                     ...userData,
                     role: ROLES.USER,
                     isEmailVerified: true,
+                    lastLogin: new Date(),
                 }
             ], { session });
 
@@ -207,6 +208,12 @@ const login = async (identifier, password) => {
     if (!user.isEmailVerified) {
         throw new AppError(httpStatus.FORBIDDEN, 'Please verify your email before logging in');
     }
+
+    if (user.isBlocked) {
+        throw new AppError(httpStatus.FORBIDDEN, 'Your account has been blocked');
+    }
+
+    await User.findByIdAndUpdate(user._id, { $set: { lastLogin: new Date() } });
 
     return user;
 };

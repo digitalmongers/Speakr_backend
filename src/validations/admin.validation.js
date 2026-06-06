@@ -61,6 +61,42 @@ const changePassword = z.object({
     }),
 });
 
+const listUsers = z.object({
+    query: z.object({
+        limit: z.string().optional().default('10').transform(Number),
+        cursor: z.string().datetime({ message: 'Cursor must be a valid ISO datetime string' }).optional(),
+        search: z.string().optional(),
+    }),
+});
+
+const toggleBlock = z.object({
+    params: z.object({
+        userId: z.string().regex(REGEX.MONGODB_ID, 'Invalid User ID format'),
+    }),
+});
+
+const deleteUser = z.object({
+    params: z.object({
+        userId: z.string().regex(REGEX.MONGODB_ID, 'Invalid User ID format'),
+    }),
+});
+
+const getUserDetails = z.object({
+    params: z.object({
+        userId: z.string().regex(REGEX.MONGODB_ID, 'Invalid User ID format'),
+    }),
+});
+
+const getUserPosts = z.object({
+    params: z.object({
+        userId: z.string().regex(REGEX.MONGODB_ID, 'Invalid User ID format'),
+    }),
+    query: z.object({
+        limit: z.string().optional().default('10').transform(Number),
+        cursor: z.string().datetime({ message: 'Cursor must be a valid ISO datetime string' }).optional(),
+    }),
+});
+
 module.exports = {
     login,
     updateProfile,
@@ -68,4 +104,12 @@ module.exports = {
     verifyOtp,
     resetPassword,
     changePassword,
+    listUsers,
+    toggleBlock,
+    deleteUser,
+    getUserDetails,
+    getUserPosts,
 };
+
+
+

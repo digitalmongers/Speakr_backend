@@ -23,7 +23,7 @@ const optionalAuth = async (req, res, next) => {
         // Only fetch required fields: role and tokenVersion
         const user = await userRepository.getUserForSession(payload.sub);
 
-        if (user && payload.v === user.tokenVersion && user.role === ROLES.USER) {
+        if (user && payload.v === user.tokenVersion && user.role === ROLES.USER && !user.isBlocked) {
             req.user = user;
             RequestContext.set('userId', user._id);
         }
