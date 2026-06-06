@@ -11,6 +11,7 @@ const { ERROR_MESSAGES, ROLES } = require('../constants');
 const { redisClient } = require('../configs/redis');
 const Logger = require('../utils/logger');
 const AuditService = require('./audit.service');
+const { runTransaction } = require('../utils/transaction');
 
 /**
  * Helper to manage idempotency locks via Redis
@@ -145,31 +146,26 @@ const verifyOTPAndCreateUser = async (email, otp) => {
 
         // OTP is correct. Proceed with atomic user creation using a transaction if possible
         let user;
-        const session = await mongoose.startSession();
-        try {
-            await session.withTransaction(async () => {
-                const userData = { ...pendingUser };
-                delete userData.otp;
-                delete userData.otpAttempts;
-                delete userData.expiresAt;
-                delete userData._id;
-                delete userData.createdAt;
-                delete userData.updatedAt;
+        await runTransaction(async (session) => {
+            const userData = { ...pendingUser };
+            delete userData.otp;
+            delete userData.otpAttempts;
+            delete userData.expiresAt;
+            delete userData._id;
+            delete userData.createdAt;
+            delete userData.updatedAt;
 
-                user = await User.create([
-                    {
-                        ...userData,
-                        role: ROLES.USER,
-                        isEmailVerified: true,
-                    }
-                ], { session });
+            user = await User.create([
+                {
+                    ...userData,
+                    role: ROLES.USER,
+                    isEmailVerified: true,
+                }
+            ], { session });
 
-                // Clean up pending user
-                await PendingUser.deleteOne({ _id: pendingUser._id }, { session });
-            });
-        } finally {
-            await session.endSession();
-        }
+            // Clean up pending user
+            await PendingUser.deleteOne({ _id: pendingUser._id }, { session });
+        });
 
         return Array.isArray(user) ? user[0] : user;
     } finally {
@@ -192,7 +188,7 @@ const login = async (identifier, password) => {
         ? { email: normalizedIdentifier } 
         : { username: normalizedIdentifier };
     
-    const user = await User.findOne(query).select('+password').lean();
+    const user = await User.findOne(query).select('+password +tokenVersion').lean();
 
     const isMatch = user ? await bcrypt.compare(password, user.password) : false;
 

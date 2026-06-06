@@ -6,6 +6,7 @@ const UploadService = require('./upload.service');
 const { getRelativeTimeAgo } = require('../utils/time');
 const AppError = require('../utils/AppError');
 const Logger = require('../utils/logger');
+const { runTransaction } = require('../utils/transaction');
 
 /**
  * Add a new audio reply to a comment
@@ -22,11 +23,10 @@ const addReply = async (postId, commentId, userId, file) => {
         throw new AppError(httpStatus.BAD_REQUEST, 'Audio reply file is required');
     }
 
-    const session = await mongoose.startSession();
     let replyResult = null;
 
     try {
-        await session.withTransaction(async () => {
+        await runTransaction(async (session) => {
             // 1. Verify parent comment exists
             const comment = await commentRepository.findById(commentId, session);
             if (!comment) {
@@ -80,8 +80,6 @@ const addReply = async (postId, commentId, userId, file) => {
             }
         }
         throw error;
-    } finally {
-        session.endSession();
     }
 };
 
@@ -144,11 +142,10 @@ const getRepliesByCommentId = async (postId, commentId, { limit = 10, cursor } =
  * @returns {Promise<boolean>} True if delete completes
  */
 const deleteReply = async (postId, commentId, replyId, userId) => {
-    const session = await mongoose.startSession();
     let replyToDelete = null;
 
     try {
-        await session.withTransaction(async () => {
+        await runTransaction(async (session) => {
             // 1. Verify parent comment exists and matches post context
             const comment = await commentRepository.findById(commentId, session);
             if (!comment) {
@@ -201,8 +198,6 @@ const deleteReply = async (postId, commentId, replyId, userId) => {
     } catch (error) {
         Logger.error('Error during comment reply deletion transaction:', { replyId, commentId, userId, error: error.message });
         throw error;
-    } finally {
-        session.endSession();
     }
 };
 

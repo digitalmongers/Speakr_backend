@@ -11,6 +11,7 @@ const UploadService = require('./upload.service');
 const AppError = require('../utils/AppError');
 const Logger = require('../utils/logger');
 const httpStatus = require('http-status').default;
+const { runTransaction } = require('../utils/transaction');
 
 /**
  * Create a new audio post
@@ -169,12 +170,11 @@ const queryPosts = async (filter, { page, limit = 10, cursor }, userId = null) =
  * @returns {Promise<boolean>}
  */
 const deletePost = async (postId, userId) => {
-    const session = await mongoose.startSession();
     let postToDelete = null;
     let s3KeysToDelete = [];
 
     try {
-        await session.withTransaction(async () => {
+        await runTransaction(async (session) => {
             // 1. Verify post exists
             const post = await postRepository.findById(postId);
             if (!post) {
@@ -242,8 +242,6 @@ const deletePost = async (postId, userId) => {
     } catch (error) {
         Logger.error('Error during post deletion transaction:', { postId, userId, error: error.message });
         throw error;
-    } finally {
-        session.endSession();
     }
 };
 

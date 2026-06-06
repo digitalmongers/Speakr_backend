@@ -5,6 +5,7 @@ const likeRepository = require('../repositories/like.repository');
 const dislikeRepository = require('../repositories/dislike.repository');
 const AppError = require('../utils/AppError');
 const Logger = require('../utils/logger');
+const { runTransaction } = require('../utils/transaction');
 
 /**
  * Toggle like status on a post for a given user.
@@ -15,11 +16,10 @@ const Logger = require('../utils/logger');
  * @returns {Promise<Object>} Object containing liked, disliked status and the new counts
  */
 const toggleLike = async (postId, userId) => {
-    const session = await mongoose.startSession();
     let result = null;
 
     try {
-        await session.withTransaction(async () => {
+        await runTransaction(async (session) => {
             // 1. Verify post existence
             const post = await postRepository.findById(postId);
             if (!post) {
@@ -77,8 +77,6 @@ const toggleLike = async (postId, userId) => {
     } catch (error) {
         Logger.error('Error during post like toggling transaction:', { postId, userId, error: error.message });
         throw error;
-    } finally {
-        session.endSession();
     }
 };
 
@@ -91,11 +89,10 @@ const toggleLike = async (postId, userId) => {
  * @returns {Promise<Object>} Object containing liked, disliked status and the new counts
  */
 const toggleDislike = async (postId, userId) => {
-    const session = await mongoose.startSession();
     let result = null;
 
     try {
-        await session.withTransaction(async () => {
+        await runTransaction(async (session) => {
             // 1. Verify post existence
             const post = await postRepository.findById(postId);
             if (!post) {
@@ -153,8 +150,6 @@ const toggleDislike = async (postId, userId) => {
     } catch (error) {
         Logger.error('Error during post dislike toggling transaction:', { postId, userId, error: error.message });
         throw error;
-    } finally {
-        session.endSession();
     }
 };
 

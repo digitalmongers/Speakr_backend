@@ -18,7 +18,9 @@ const lockRequestMiddleware = catchAsync(async (req, res, next) => {
         return next();
     }
 
-    const identifier = req.user ? req.user._id.toString() : req.ip;
+    const identifier = req.user 
+        ? req.user._id.toString() 
+        : (req.admin ? req.admin._id.toString() : req.ip);
     const bodyHash = crypto
         .createHash('sha256')
         .update(JSON.stringify(req.body || {}))

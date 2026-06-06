@@ -7,6 +7,7 @@ const dislikeRepository = require('../repositories/dislike.repository');
 const listenRepository = require('../repositories/listen.repository');
 const AppError = require('../utils/AppError');
 const Logger = require('../utils/logger');
+const { runTransaction } = require('../utils/transaction');
 
 /**
  * Toggle save status on a post for a given user.
@@ -16,11 +17,10 @@ const Logger = require('../utils/logger');
  * @returns {Promise<Object>} Object containing saved status and the new saves count
  */
 const toggleSave = async (postId, userId) => {
-    const session = await mongoose.startSession();
     let result = null;
 
     try {
-        await session.withTransaction(async () => {
+        await runTransaction(async (session) => {
             // 1. Verify post existence
             const post = await postRepository.findById(postId);
             if (!post) {
@@ -64,8 +64,6 @@ const toggleSave = async (postId, userId) => {
     } catch (error) {
         Logger.error('Error during post save toggling transaction:', { postId, userId, error: error.message });
         throw error;
-    } finally {
-        session.endSession();
     }
 };
 

@@ -30,9 +30,8 @@ const errorHandler = (err, req, res, next) => {
         ...(env.NODE_ENV === 'development' && { stack: err.stack }),
     };
 
-    if (env.NODE_ENV === 'development') {
-        Logger.error(err.message, { error: err });
-    }
+    // Always log the error internally for monitoring and debugging
+    Logger.error(err.message, { error: err });
 
     res.status(statusCode).send(response);
 };
