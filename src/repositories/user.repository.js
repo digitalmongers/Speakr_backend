@@ -72,7 +72,7 @@ const getUserByVerificationToken = async (token) => {
  * @returns {Promise<Object>}
  */
 const getUserForSession = async (id) => {
-    return User.findById(id).select('role +tokenVersion').lean();
+    return User.findById(id).select('role +tokenVersion +isBlocked').lean();
 };
 
 const getPublicProfile = async (userId) => {

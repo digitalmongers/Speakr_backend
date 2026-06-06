@@ -33,6 +33,11 @@ const userAuth = catchAsync(async (req, res, next) => {
             throw new AppError(httpStatus.UNAUTHORIZED, 'Session expired. Please login again.');
         }
 
+        // Check if user is blocked
+        if (user.isBlocked) {
+            throw new AppError(httpStatus.FORBIDDEN, 'Your account has been blocked');
+        }
+
         // Strictly check for USER role
         if (user.role !== ROLES.USER) {
             throw new AppError(httpStatus.FORBIDDEN, 'Forbidden: This resource is accessible to users only');

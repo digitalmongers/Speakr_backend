@@ -4,6 +4,7 @@ const authRoutes = require('./auth.routes');
 const postRoutes = require('./post.routes');
 const userRoutes = require("./user.routes");
 const adminAuthRoutes = require('./admin/adminAuth.routes');
+const adminUserRoutes = require('./admin/adminUser.routes');
 const router = express.Router();
 
 // Health check endpoint
@@ -15,5 +16,6 @@ router.use('/upload', uploadRoutes);
 router.use('/auth', authRoutes);
 router.use('/posts', postRoutes);
 router.use('/admin/auth', adminAuthRoutes);
+router.use('/admin/users', adminUserRoutes);
 
 module.exports = router;
