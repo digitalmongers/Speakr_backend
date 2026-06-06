@@ -11,7 +11,7 @@ const signup = catchAsync(async (req, res) => {
     try {
         await authService.initiateSignup(req.body);
         
-        await AuditService.record({
+        AuditService.record({
             action: 'AUTH_SIGNUP_INITIATED',
             metadata: { email }
         });
@@ -25,7 +25,7 @@ const signup = catchAsync(async (req, res) => {
             )
         );
     } catch (error) {
-        await AuditService.record({
+        AuditService.record({
             action: 'AUTH_SIGNUP_INIT_FAILURE',
             status: 'FAILURE',
             metadata: { email },
@@ -51,7 +51,7 @@ const verifyOtp = catchAsync(async (req, res) => {
         role: user.role,
     };
 
-    await AuditService.record({
+    AuditService.record({
         action: 'AUTH_SIGNUP_COMPLETED',
         entity: 'User',
         entityId: user._id,
@@ -67,7 +67,7 @@ const verifyOtp = catchAsync(async (req, res) => {
             )
         );
     } catch (error) {
-        await AuditService.record({
+        AuditService.record({
             action: 'AUTH_SIGNUP_COMPLETION_FAILURE',
             status: 'FAILURE',
             metadata: { email },
@@ -93,7 +93,7 @@ const login = catchAsync(async (req, res) => {
             role: user.role,
         };
 
-        await AuditService.record({
+        AuditService.record({
             action: 'AUTH_LOGIN_SUCCESS',
             entity: 'User',
             entityId: user._id,
@@ -109,7 +109,7 @@ const login = catchAsync(async (req, res) => {
             )
         );
     } catch (error) {
-        await AuditService.record({
+        AuditService.record({
             action: 'AUTH_LOGIN_FAILURE',
             status: 'FAILURE',
             metadata: { identifier },
@@ -123,7 +123,7 @@ const logout = catchAsync(async (req, res) => {
     const userId = req.user._id;
     await authService.logout(userId);
 
-    await AuditService.record({
+    AuditService.record({
         action: 'AUTH_LOGOUT',
         userId: userId
     });

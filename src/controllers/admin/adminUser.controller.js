@@ -16,7 +16,7 @@ const getVerifiedUsers = catchAsync(async (req, res) => {
         search,
     });
 
-    await AuditService.record({
+    AuditService.record({
         action: 'ADMIN_GET_USERS_LIST',
         entity: 'Admin',
         entityId: req.admin._id,
@@ -41,7 +41,7 @@ const toggleBlock = catchAsync(async (req, res) => {
 
     const result = await adminUserService.toggleUserBlock(userId);
 
-    await AuditService.record({
+    AuditService.record({
         action: 'ADMIN_TOGGLE_USER_BLOCK',
         entity: 'User',
         entityId: userId,
@@ -66,7 +66,7 @@ const deleteUser = catchAsync(async (req, res) => {
 
     await adminUserService.deleteUser(userId);
 
-    await AuditService.record({
+    AuditService.record({
         action: 'ADMIN_DELETE_USER',
         entity: 'User',
         entityId: userId,
@@ -90,7 +90,7 @@ const getUserDetails = catchAsync(async (req, res) => {
 
     const userDetails = await adminUserService.getUserDetails(userId);
 
-    await AuditService.record({
+    AuditService.record({
         action: 'ADMIN_GET_USER_DETAILS',
         entity: 'User',
         entityId: userId,
@@ -115,7 +115,7 @@ const getUserPosts = catchAsync(async (req, res) => {
 
     const postsData = await adminUserService.getUserPosts(userId, { limit, cursor });
 
-    await AuditService.record({
+    AuditService.record({
         action: 'ADMIN_GET_USER_POSTS',
         entity: 'User',
         entityId: userId,

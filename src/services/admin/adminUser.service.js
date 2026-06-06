@@ -358,15 +358,19 @@ const deleteUser = async (userId) => {
             Logger.info(`User ${userId} and all associated cascade data deleted successfully from DB.`);
         });
 
-        // Clean up collected S3 files post-commit
+        // Clean up collected S3 files post-commit asynchronously in background
         if (s3KeysToDelete.length > 0) {
-            Logger.info(`Initiating post-commit asset cleanup from S3: ${s3KeysToDelete.length} files`);
-            await Promise.all(
+            Logger.info(`Initiating background post-commit asset cleanup from S3: ${s3KeysToDelete.length} files`);
+            Promise.all(
                 s3KeysToDelete.map(key =>
                     UploadService.deleteFromS3(key)
                         .catch(err => Logger.error(`Failed to delete S3 asset ${key} post-commit:`, err))
                 )
-            );
+            ).then(() => {
+                Logger.info('Successfully finished background S3 asset cleanup');
+            }).catch((err) => {
+                Logger.error('Failed background S3 asset cleanup:', err);
+            });
         }
 
         return true;

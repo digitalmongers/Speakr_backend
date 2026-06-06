@@ -54,7 +54,7 @@ const initiateSignup = async (userBody) => {
 
     try {
         if (await User.isEmailTaken(email)) {
-            await AuditService.record({
+            AuditService.record({
                 action: 'AUTH_SIGNUP_BLOCKED',
                 status: 'FAILURE',
                 metadata: { email, reason: 'Email already taken' }
@@ -62,7 +62,7 @@ const initiateSignup = async (userBody) => {
             throw new AppError(httpStatus.BAD_REQUEST, 'Email already taken');
         }
         if (await User.isUsernameTaken(username)) {
-            await AuditService.record({
+            AuditService.record({
                 action: 'AUTH_SIGNUP_BLOCKED',
                 status: 'FAILURE',
                 metadata: { username, reason: 'Username already taken' }
@@ -126,7 +126,7 @@ const verifyOTPAndCreateUser = async (email, otp) => {
             await PendingUser.findByIdAndUpdate(pendingUser._id, { $inc: { otpAttempts: 1 } });
             
             if (pendingUser.otpAttempts + 1 >= 5) {
-                await AuditService.record({
+                AuditService.record({
                     action: 'AUTH_OTP_MAX_ATTEMPTS',
                     status: 'FAILURE',
                     metadata: { email: normalizedEmail, attempts: pendingUser.otpAttempts + 1 }
@@ -135,7 +135,7 @@ const verifyOTPAndCreateUser = async (email, otp) => {
                 throw new AppError(httpStatus.BAD_REQUEST, 'Too many failed attempts. Registration cancelled.');
             }
             
-            await AuditService.record({
+            AuditService.record({
                 action: 'AUTH_OTP_MISMATCH',
                 status: 'FAILURE',
                 metadata: { email: normalizedEmail, attempt: pendingUser.otpAttempts + 1 }
@@ -267,7 +267,7 @@ const resendOTP = async (email) => {
         Logger.error(`Failed to resend OTP email to ${normalizedEmail}:`, err);
     });
 
-    await AuditService.record({
+    AuditService.record({
         action: 'AUTH_OTP_RESENT',
         metadata: { email: normalizedEmail }
     });
