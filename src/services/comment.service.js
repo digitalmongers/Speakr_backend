@@ -5,6 +5,7 @@ const commentRepository = require('../repositories/comment.repository');
 const { getRelativeTimeAgo } = require('../utils/time');
 const AppError = require('../utils/AppError');
 const Logger = require('../utils/logger');
+const { runTransaction } = require('../utils/transaction');
 
 /**
  * Add a new comment to an audio post
@@ -15,11 +16,10 @@ const Logger = require('../utils/logger');
  * @returns {Promise<Object>} The newly created comment
  */
 const addComment = async (postId, userId, content) => {
-    const session = await mongoose.startSession();
     let commentResult = null;
 
     try {
-        await session.withTransaction(async () => {
+        await runTransaction(async (session) => {
             // 1. Verify post exists
             const post = await postRepository.findById(postId);
             if (!post) {
@@ -54,8 +54,6 @@ const addComment = async (postId, userId, content) => {
     } catch (error) {
         Logger.error('Error during add comment transaction:', { postId, userId, error: error.message });
         throw error;
-    } finally {
-        session.endSession();
     }
 };
 
@@ -113,10 +111,8 @@ const getCommentsByPostId = async (postId, { limit = 10, cursor } = {}) => {
  * @returns {Promise<boolean>} True if comment deleted
  */
 const deleteComment = async (commentId, postId, userId) => {
-    const session = await mongoose.startSession();
-
     try {
-        await session.withTransaction(async () => {
+        await runTransaction(async (session) => {
             // 1. Find comment and check existence
             const comment = await commentRepository.findById(commentId, session);
             if (!comment) {
@@ -149,8 +145,6 @@ const deleteComment = async (commentId, postId, userId) => {
     } catch (error) {
         Logger.error('Error during comment deletion transaction:', { commentId, postId, userId, error: error.message });
         throw error;
-    } finally {
-        session.endSession();
     }
 };
 

@@ -6,12 +6,16 @@ const Logger = require('./utils/logger');
 const env = require('./configs/env');
 const { initEmailWorker } = require('./workers/email.worker');
 const { closeRedis } = require('./configs/redis');
+const { bootstrapAdmin } = require('./utils/bootstrap');
 
 const port = env.PORT;
 let server;
 
 // Connect to MongoDB
-connectDB().then(() => {
+connectDB().then(async () => {
+    // Bootstrap Admin Account
+    await bootstrapAdmin();
+
     // Initialize Email Worker
     initEmailWorker();
 

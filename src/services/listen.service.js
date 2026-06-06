@@ -4,6 +4,7 @@ const postRepository = require('../repositories/post.repository');
 const listenRepository = require('../repositories/listen.repository');
 const AppError = require('../utils/AppError');
 const Logger = require('../utils/logger');
+const { runTransaction } = require('../utils/transaction');
 
 /**
  * Record a unique listen for a post.
@@ -16,11 +17,10 @@ const Logger = require('../utils/logger');
  * @returns {Promise<Object>} Result containing listensCount and whether it was newly registered
  */
 const recordListen = async (postId, { userId = null, guestId = null, ipAddress = null }) => {
-    const session = await mongoose.startSession();
     let result = null;
 
     try {
-        await session.withTransaction(async () => {
+        await runTransaction(async (session) => {
             // 1. Verify post existence
             const post = await postRepository.findById(postId);
             if (!post) {
@@ -76,8 +76,6 @@ const recordListen = async (postId, { userId = null, guestId = null, ipAddress =
     } catch (error) {
         Logger.error('Error during post listen recording transaction:', { postId, userId, guestId, ipAddress, error: error.message });
         throw error;
-    } finally {
-        session.endSession();
     }
 };
 

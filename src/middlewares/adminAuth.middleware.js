@@ -1,15 +1,15 @@
 const httpStatus = require('http-status').default;
 const tokenService = require('../services/token.service');
-const userRepository = require('../repositories/user.repository');
+const Admin = require('../models/admin/admin.model');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
-const { ROLES } = require('../constants');
 const RequestContext = require('../utils/context');
 
 /**
- * Middleware to authenticate and authorize for USER role only
+ * Middleware to authenticate and authorize for Admin operations.
+ * Resolves JWTs against the Admin collection only.
  */
-const userAuth = catchAsync(async (req, res, next) => {
+const adminAuth = catchAsync(async (req, res, next) => {
     let token;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
@@ -21,28 +21,25 @@ const userAuth = catchAsync(async (req, res, next) => {
 
     try {
         const payload = tokenService.verifyToken(token);
-        // Only fetch required fields: role and tokenVersion
-        const user = await userRepository.getUserForSession(payload.sub);
+        
+        // Fetch Admin specifically for session validation
+        const admin = await Admin.findById(payload.sub).select('+tokenVersion').lean();
 
-        if (!user) {
-            throw new AppError(httpStatus.UNAUTHORIZED, 'User not found');
+        if (!admin) {
+            throw new AppError(httpStatus.UNAUTHORIZED, 'Admin not found');
         }
 
-        // Verify token version
-        if (payload.v !== user.tokenVersion) {
+        // Verify token version to support session invalidation on logout
+        if (payload.v !== admin.tokenVersion) {
             throw new AppError(httpStatus.UNAUTHORIZED, 'Session expired. Please login again.');
         }
 
-        // Strictly check for USER role
-        if (user.role !== ROLES.USER) {
-            throw new AppError(httpStatus.FORBIDDEN, 'Forbidden: This resource is accessible to users only');
-        }
-
-        req.user = user;
-        RequestContext.set('userId', user._id);
+        req.admin = admin;
+        RequestContext.set('adminId', admin._id);
+        RequestContext.set('userId', admin._id); // for logging compatibility
         next();
     } catch (error) {
-        console.error('DEBUG: userAuth middleware failed with error:', error);
+        console.error('DEBUG: adminAuth middleware failed with error:', error);
         if (error instanceof AppError) {
             throw error;
         }
@@ -50,4 +47,4 @@ const userAuth = catchAsync(async (req, res, next) => {
     }
 });
 
-module.exports = userAuth;
+module.exports = adminAuth;

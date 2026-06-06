@@ -35,6 +35,10 @@ const envSchema = z.object({
     REDIS_URL: z.string().default('redis://127.0.0.1:6379'),
     REDIS_MAX_RETRIES_PER_REQUEST: z.string().transform(Number).default('3'),
     REDIS_CONNECT_TIMEOUT: z.string().transform(Number).default('10000'),
+
+    // Admin Configuration
+    ADMIN_EMAIL: z.string().email(),
+    ADMIN_PASSWORD: z.string().min(8),
 });
 
 
