@@ -142,6 +142,8 @@ userSchema.pre('save', async function (next) {
     next();
 });
 
+userSchema.index({ isEmailVerified: 1, createdAt: -1 });
+
 /**
  * @typedef User
  */

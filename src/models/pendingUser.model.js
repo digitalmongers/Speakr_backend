@@ -59,6 +59,8 @@ const pendingUserSchema = mongoose.Schema(
     }
 );
 
+pendingUserSchema.index({ email: 1 });
+
 /**
  * @typedef PendingUser
  */

@@ -181,17 +181,18 @@ const deleteReply = async (postId, commentId, replyId, userId) => {
             Logger.info('Comment reply deleted successfully', { replyId, commentId, userId });
         });
 
-        // 7. After successful transaction commit, delete storage asset
+        // 7. After successful transaction commit, delete storage asset in the background asynchronously
         if (replyToDelete && replyToDelete.audioKey) {
-            try {
-                await UploadService.deleteFromS3(replyToDelete.audioKey);
-                Logger.info('Successfully deleted reply audio asset from storage', { key: replyToDelete.audioKey });
-            } catch (storageError) {
-                Logger.error('Failed to delete reply audio asset from storage during post-commit', {
-                    key: replyToDelete.audioKey,
-                    error: storageError.message,
+            UploadService.deleteFromS3(replyToDelete.audioKey)
+                .then(() => {
+                    Logger.info('Successfully deleted reply audio asset from storage in background', { key: replyToDelete.audioKey });
+                })
+                .catch((storageError) => {
+                    Logger.error('Failed to delete reply audio asset from storage during background post-commit', {
+                        key: replyToDelete.audioKey,
+                        error: storageError.message,
+                    });
                 });
-            }
         }
 
         return true;

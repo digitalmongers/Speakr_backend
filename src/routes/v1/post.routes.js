@@ -36,6 +36,7 @@ router.post(
 router.get(
     '/',
     optionalAuth,
+    cacheMiddleware(60),
     validate(postValidation.queryPosts),
     postController.queryPosts
 );
@@ -117,6 +118,7 @@ router.post(
 router.get(
     '/:postId',
     optionalAuth,
+    cacheMiddleware(60),
     validate(postValidation.getPost),
     postController.getPost
 );
@@ -152,6 +154,7 @@ router.post(
 router.get(
     '/:postId/comments',
     optionalAuth,
+    cacheMiddleware(60),
     validate(commentValidation.getComments),
     commentController.getComments
 );
@@ -189,6 +192,7 @@ router.post(
 router.get(
     '/:postId/comments/:commentId/replies',
     optionalAuth,
+    cacheMiddleware(60),
     validate(commentReplyValidation.getReplies),
     commentReplyController.getReplies
 );

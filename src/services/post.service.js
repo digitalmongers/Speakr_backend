@@ -224,17 +224,19 @@ const deletePost = async (postId, userId) => {
             if (postToDelete.thumbnailKey) s3KeysToDelete.push(postToDelete.thumbnailKey);
 
             if (s3KeysToDelete.length > 0) {
-                Logger.info('Initiating post and associated comment replies asset cleanup from storage', { postId, keysCount: s3KeysToDelete.length });
+                Logger.info('Initiating background post and associated comment replies asset cleanup from storage', { postId, keysCount: s3KeysToDelete.length });
                 
-                // Concurrently delete all collected S3 keys
-                await Promise.all(
+                // Concurrently delete all collected S3 keys in background
+                Promise.all(
                     s3KeysToDelete.map(key => 
                         UploadService.deleteFromS3(key)
                             .catch(err => Logger.error(`Failed to delete S3 asset ${key} post-commit:`, err))
                     )
-                );
-                
-                Logger.info('Post assets purged from storage successfully');
+                ).then(() => {
+                    Logger.info('Post assets purged from storage successfully in background', { postId });
+                }).catch((err) => {
+                    Logger.error('Failed background S3 post assets cleanup:', err);
+                });
             }
         }
 

@@ -13,7 +13,7 @@ const login = catchAsync(async (req, res) => {
     try {
         const { admin, tokens } = await adminAuthService.login(email, password);
 
-        await AuditService.record({
+        AuditService.record({
             action: 'ADMIN_LOGIN_SUCCESS',
             entity: 'Admin',
             entityId: admin.id,
@@ -29,7 +29,7 @@ const login = catchAsync(async (req, res) => {
             )
         );
     } catch (error) {
-        await AuditService.record({
+        AuditService.record({
             action: 'ADMIN_LOGIN_FAILURE',
             status: 'FAILURE',
             metadata: { email },
@@ -43,7 +43,7 @@ const logout = catchAsync(async (req, res) => {
     const adminId = req.admin._id;
     await adminAuthService.logout(adminId);
 
-    await AuditService.record({
+    AuditService.record({
         action: 'ADMIN_LOGOUT',
         entity: 'Admin',
         entityId: adminId,
@@ -83,7 +83,7 @@ const updateProfile = catchAsync(async (req, res) => {
     const adminId = req.admin._id;
     const updatedAdmin = await adminAuthService.updateProfile(adminId, req.body);
 
-    await AuditService.record({
+    AuditService.record({
         action: 'ADMIN_PROFILE_UPDATE',
         entity: 'Admin',
         entityId: adminId,
@@ -104,7 +104,7 @@ const forgotPassword = catchAsync(async (req, res) => {
     const { email } = req.body;
     const result = await adminAuthService.requestForgotPassword(email);
 
-    await AuditService.record({
+    AuditService.record({
         action: 'ADMIN_FORGOT_PASSWORD_REQUEST',
         metadata: { email },
     });
@@ -122,7 +122,7 @@ const verifyOtp = catchAsync(async (req, res) => {
     const { email, otp } = req.body;
     const { resetToken } = await adminAuthService.verifyForgotPasswordOtp(email, otp);
 
-    await AuditService.record({
+    AuditService.record({
         action: 'ADMIN_OTP_VERIFICATION',
         metadata: { email },
     });
@@ -140,7 +140,7 @@ const resetPassword = catchAsync(async (req, res) => {
     const { email, resetToken, newPassword } = req.body;
     const result = await adminAuthService.resetPassword(email, resetToken, newPassword);
 
-    await AuditService.record({
+    AuditService.record({
         action: 'ADMIN_PASSWORD_RESET_SUCCESS',
         metadata: { email },
     });
@@ -159,7 +159,7 @@ const changePassword = catchAsync(async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const result = await adminAuthService.changePassword(adminId, currentPassword, newPassword);
 
-    await AuditService.record({
+    AuditService.record({
         action: 'ADMIN_PASSWORD_CHANGE',
         entity: 'Admin',
         entityId: adminId,
