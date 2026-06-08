@@ -1,6 +1,5 @@
 const { z } = require('zod');
 const { REGEX } = require('../constants');
-const { CATEGORIES, LANGUAGES } = require('../models/post.model');
 
 const createPost = {
     body: z.object({
@@ -18,12 +17,10 @@ const createPost = {
             .url('Invalid Thumbnail URL format'),
         thumbnailKey: z.string({ required_error: 'Thumbnail storage key is required' })
             .min(1, 'Thumbnail storage key cannot be empty'),
-        category: z.enum(CATEGORIES, {
-            errorMap: () => ({ message: `Category must be one of: ${CATEGORIES.join(', ')}` }),
-        }),
-        language: z.enum(LANGUAGES, {
-            errorMap: () => ({ message: `Language must be one of: ${LANGUAGES.join(', ')}` }),
-        }),
+        category: z.string({ required_error: 'Category is required' })
+            .min(1, 'Category cannot be empty'),
+        language: z.string({ required_error: 'Language is required' })
+            .min(1, 'Language cannot be empty'),
         isKidsContent: z.enum(['yes', 'no'], {
             required_error: 'Kids content selection (yes/no) is required',
         }).transform((val) => val === 'yes'),
@@ -34,8 +31,8 @@ const createPost = {
 
 const queryPosts = {
     query: z.object({
-        category: z.enum(CATEGORIES).optional(),
-        language: z.enum(LANGUAGES).optional(),
+        category: z.string().optional(),
+        language: z.string().optional(),
         creator: z.string().regex(REGEX.MONGODB_ID, 'Invalid Creator ID format').optional(),
         isKidsContent: z.enum(['yes', 'no']).transform((val) => val === 'yes').optional(),
         page: z.string().optional().transform((val) => val ? Number(val) : undefined),

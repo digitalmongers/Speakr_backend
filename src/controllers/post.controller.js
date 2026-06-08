@@ -18,7 +18,7 @@ const createPost = catchAsync(async (req, res) => {
 
     // Invalidate cached lists (Homepage, Creator feeds)
     // Ensures homepage updates instantly when a new post is published!
-    await invalidateCacheByPattern('cache:/api/v1/posts*');
+    await invalidateCacheByPattern('cache:*:/api/v1/posts*');
 
     res.status(httpStatus.CREATED).json({
         status: 'success',
@@ -129,7 +129,7 @@ const deletePost = catchAsync(async (req, res) => {
     await postService.deletePost(postId, req.user._id);
 
     // Invalidate caches instantly so deleted content stops appearing in feeds
-    await invalidateCacheByPattern('cache:/api/v1/posts*');
+    await invalidateCacheByPattern('cache:*:/api/v1/posts*');
 
     res.status(httpStatus.OK).json({
         status: 'success',

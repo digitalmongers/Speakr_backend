@@ -6,7 +6,7 @@ const Logger = require('./utils/logger');
 const env = require('./configs/env');
 const { initEmailWorker } = require('./workers/email.worker');
 const { closeRedis } = require('./configs/redis');
-const { bootstrapAdmin } = require('./utils/bootstrap');
+const { bootstrapAdmin, bootstrapCategories, bootstrapLanguages } = require('./utils/bootstrap');
 
 const port = env.PORT;
 let server;
@@ -15,6 +15,12 @@ let server;
 connectDB().then(async () => {
     // Bootstrap Admin Account
     await bootstrapAdmin();
+
+    // Bootstrap Default Categories
+    await bootstrapCategories();
+
+    // Bootstrap Default Languages
+    await bootstrapLanguages();
 
     // Initialize Email Worker
     initEmailWorker();

@@ -39,7 +39,7 @@ const createUploadMiddleware = (allowedMimeTypes, maxFileSizeMB, folderPrefix) =
                 key: (req, file, cb) => {
                     const ext = path.extname(file.originalname) || '';
                     const baseFolder = folderPrefix;
-                    const userId = req.user ? req.user.id : 'anonymous';
+                    const userId = req.user ? (req.user.id || req.user._id) : (req.admin ? (req.admin.id || req.admin._id) : 'anonymous');
                     const fileKey = `${baseFolder}/${userId}/${uuidv4()}-${Date.now()}${ext}`;
                     cb(null, fileKey);
                 }
@@ -86,7 +86,7 @@ const createUploadMiddleware = (allowedMimeTypes, maxFileSizeMB, folderPrefix) =
 
                     try {
                         const baseFolder = folderPrefix;
-                        const userId = req.user ? req.user.id : 'anonymous';
+                        const userId = req.user ? (req.user.id || req.user._id) : (req.admin ? (req.admin.id || req.admin._id) : 'anonymous');
                         const publicId = `${baseFolder}/${userId}/${uuidv4()}-${Date.now()}`;
 
                         let resourceType = 'auto';
@@ -131,10 +131,25 @@ const createUploadMiddleware = (allowedMimeTypes, maxFileSizeMB, folderPrefix) =
     };
 };
 
+const systemSettingService = require('../services/systemSetting.service');
+
 const audioMimeTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/mp4'];
 const imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
-const uploadAudio = createUploadMiddleware(audioMimeTypes, 50, 'uploads/audio');
+const uploadAudio = {
+    single: (fieldname) => {
+        return async (req, res, next) => {
+            try {
+                const maxAudioSizeMB = await systemSettingService.getSetting('maxAudioSizeMB', 50);
+                const multerInstance = createUploadMiddleware(audioMimeTypes, maxAudioSizeMB, 'uploads/audio');
+                multerInstance.single(fieldname)(req, res, next);
+            } catch (err) {
+                next(err);
+            }
+        };
+    }
+};
+
 const uploadImage = createUploadMiddleware(imageMimeTypes, 10, 'uploads/images');
 
 const multerErrorHandler = (err, req, res, next) => {

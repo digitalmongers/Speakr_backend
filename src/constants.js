@@ -110,45 +110,6 @@ const GENDER = {
     PREFER_NOT_TO_SAY: 'prefer not to say'
 };
 
-const POST_CATEGORIES = [
-    'Music',
-    'Podcast',
-    'News',
-    'Comedy',
-    'Education',
-    'Sports',
-    'Faith',
-    'Culture',
-    'Business',
-    'Science',
-    'Drama',
-    'Wellness',
-    'Gaming',
-    'Talkshows',
-    'Openmic',
-    'Language',
-    'Family',
-    'Arts',
-    'History',
-    'Food',
-    'Travel',
-    'Tech',
-    'Documentaries',
-    'Audiobooks',
-    'Film',
-    'Stories'
-];
-
-const POST_LANGUAGES = [
-    'English',
-    'Hindi',
-    'Spanish',
-    'French',
-    'German',
-    'Japanese',
-    'Russian'
-];
-
 module.exports = {
     HTTP_STATUS,
     ERROR_MESSAGES,
@@ -158,7 +119,5 @@ module.exports = {
     REGEX,
     ROLES,
     SYSTEM_MODE,
-    GENDER,
-    POST_CATEGORIES,
-    POST_LANGUAGES
+    GENDER
 };

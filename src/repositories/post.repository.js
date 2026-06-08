@@ -14,8 +14,8 @@ const create = async (postBody) => {
  * @param {ObjectId} id
  * @returns {Promise<Object|null>}
  */
-const findById = async (id) => {
-    return Post.findById(id).lean();
+const findById = async (id, session = null) => {
+    return Post.findById(id).session(session).lean();
 };
 
 /**
