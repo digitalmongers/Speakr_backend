@@ -172,12 +172,13 @@ const deleteReply = async (postId, commentId, replyId, userId) => {
             }
 
             // 5. Delete reply record
-            await commentReplyRepository.deleteById(replyId, session);
+            const deletedReply = await commentReplyRepository.deleteById(replyId, session);
 
-            // 6. Decrement counter on parent comment
-            await commentRepository.decrementAudioRepliesCount(commentId, session);
-
-            replyToDelete = reply;
+            if (deletedReply) {
+                // 6. Decrement counter on parent comment
+                await commentRepository.decrementAudioRepliesCount(commentId, session);
+                replyToDelete = deletedReply;
+            }
             Logger.info('Comment reply deleted successfully', { replyId, commentId, userId });
         });
 

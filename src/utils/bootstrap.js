@@ -1,7 +1,48 @@
 const Admin = require('../models/admin/admin.model');
+const Category = require('../models/category.model');
+const Language = require('../models/language.model');
 const env = require('../configs/env');
 const Logger = require('./logger');
 const bcrypt = require('bcryptjs');
+
+const INITIAL_CATEGORIES = [
+    'Music',
+    'Podcast',
+    'News',
+    'Comedy',
+    'Education',
+    'Sports',
+    'Faith',
+    'Culture',
+    'Business',
+    'Science',
+    'Drama',
+    'Wellness',
+    'Gaming',
+    'Talkshows',
+    'Openmic',
+    'Language',
+    'Family',
+    'Arts',
+    'History',
+    'Food',
+    'Travel',
+    'Tech',
+    'Documentaries',
+    'Audiobooks',
+    'Film',
+    'Stories'
+];
+
+const INITIAL_LANGUAGES = [
+    'English',
+    'Hindi',
+    'Spanish',
+    'French',
+    'German',
+    'Japanese',
+    'Russian'
+];
 
 /**
  * Bootstraps the system Admin account from environment configuration.
@@ -46,4 +87,40 @@ const bootstrapAdmin = async () => {
     }
 };
 
-module.exports = { bootstrapAdmin };
+/**
+ * Bootstraps default categories into the database if the collection is empty.
+ */
+const bootstrapCategories = async () => {
+    try {
+        const count = await Category.countDocuments();
+        if (count === 0) {
+            const categoriesToInsert = INITIAL_CATEGORIES.map(name => ({ name }));
+            await Category.insertMany(categoriesToInsert);
+            Logger.info(`🚀 Seeded ${INITIAL_CATEGORIES.length} default categories successfully.`);
+        } else {
+            Logger.debug('Categories already bootstrapped.');
+        }
+    } catch (error) {
+        Logger.error('❌ Failed to bootstrap Categories:', { error: error.message, stack: error.stack });
+    }
+};
+
+/**
+ * Bootstraps default languages into the database if the collection is empty.
+ */
+const bootstrapLanguages = async () => {
+    try {
+        const count = await Language.countDocuments();
+        if (count === 0) {
+            const languagesToInsert = INITIAL_LANGUAGES.map(name => ({ name }));
+            await Language.insertMany(languagesToInsert);
+            Logger.info(`🚀 Seeded ${INITIAL_LANGUAGES.length} default languages successfully.`);
+        } else {
+            Logger.debug('Languages already bootstrapped.');
+        }
+    } catch (error) {
+        Logger.error('❌ Failed to bootstrap Languages:', { error: error.message, stack: error.stack });
+    }
+};
+
+module.exports = { bootstrapAdmin, bootstrapCategories, bootstrapLanguages };

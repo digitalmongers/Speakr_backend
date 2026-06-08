@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { POST_CATEGORIES: CATEGORIES, POST_LANGUAGES: LANGUAGES } = require('../constants');
 
 const postSchema = new mongoose.Schema(
     {
@@ -40,18 +39,12 @@ const postSchema = new mongoose.Schema(
         category: {
             type: String,
             required: [true, 'Category is required'],
-            enum: {
-                values: CATEGORIES,
-                message: 'Invalid category: {VALUE}',
-            },
+            trim: true,
         },
         language: {
             type: String,
             required: [true, 'Language is required'],
-            enum: {
-                values: LANGUAGES,
-                message: 'Invalid language: {VALUE}',
-            },
+            trim: true,
         },
         isKidsContent: {
             type: Boolean,
@@ -125,7 +118,5 @@ postSchema.index(
 const Post = mongoose.model('Post', postSchema);
 
 module.exports = {
-    Post,
-    CATEGORIES,
-    LANGUAGES
+    Post
 };

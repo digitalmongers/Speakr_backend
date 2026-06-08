@@ -20,6 +20,7 @@ const cacheMiddleware = (ttlInSeconds = 60) => {
             
         // Use full original URL path without query params to avoid route mounting collision
         const path = req.originalUrl.split('?')[0];
+        const userScope = req.user ? req.user._id.toString() : 'public';
         const cacheKey = `cache:${userScope}:${path}:${sortedQuery}`;
 
         try {

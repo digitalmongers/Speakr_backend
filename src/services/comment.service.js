@@ -130,12 +130,14 @@ const deleteComment = async (commentId, postId, userId) => {
             }
 
             // 4. Delete the comment
-            await commentRepository.deleteById(commentId, session);
+            const deletedComment = await commentRepository.deleteById(commentId, session);
 
-            // 5. Decrement commentsCount on the post atomically
-            const updatedPost = await postRepository.decrementCommentsCount(postId, session);
-            if (!updatedPost) {
-                Logger.warn('Post not found during comment deletion post update', { postId });
+            if (deletedComment) {
+                // 5. Decrement commentsCount on the post atomically
+                const updatedPost = await postRepository.decrementCommentsCount(postId, session);
+                if (!updatedPost) {
+                    Logger.warn('Post not found during comment deletion post update', { postId });
+                }
             }
 
             Logger.info('Comment deleted successfully', { commentId, postId, userId });
