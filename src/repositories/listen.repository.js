@@ -7,7 +7,7 @@ const { Listen } = require('../models/listen.model');
  * @returns {Promise<Listen|null>}
  */
 const findOne = async (criteria, session = null) => {
-    return Listen.findOne(criteria).session(session);
+    return Listen.findOne(criteria).session(session).lean();
 };
 
 /**

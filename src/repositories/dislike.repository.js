@@ -8,7 +8,7 @@ const { Dislike } = require('../models/dislike.model');
  * @returns {Promise<Dislike|null>}
  */
 const findOneByPostAndUser = async (postId, userId, session = null) => {
-    return Dislike.findOne({ post: postId, user: userId }).session(session);
+    return Dislike.findOne({ post: postId, user: userId }).session(session).lean();
 };
 
 /**

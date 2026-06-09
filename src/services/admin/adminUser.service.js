@@ -26,7 +26,8 @@ const listVerifiedUsers = async ({ limit, cursor, search }) => {
     const filter = { isEmailVerified: true };
 
     if (search) {
-        const searchRegex = new RegExp(search, 'i');
+        const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const searchRegex = new RegExp(escapedSearch, 'i');
         filter.$or = [
             { firstName: searchRegex },
             { lastName: searchRegex },
@@ -146,6 +147,12 @@ const deleteUser = async (userId) => {
                 throw new AppError(httpStatus.NOT_FOUND, 'User not found');
             }
 
+            // Clean up profile picture from storage if it exists
+            if (user.profilePic) {
+                const profilePicKey = UploadService.extractKeyFromUrl(user.profilePic);
+                if (profilePicKey) s3KeysToDelete.push(profilePicKey);
+            }
+
             // --- 1. Find all Posts created by the user ---
             const userPosts = await Post.find({ creator: userId }).session(session).lean();
             const userPostIds = userPosts.map(p => p._id);
@@ -236,13 +243,24 @@ const deleteUser = async (userId) => {
                     replyCountsByComment[commentIdStr] = (replyCountsByComment[commentIdStr] || 0) + 1;
                 });
 
-                const commentReplyBulkOps = Object.entries(replyCountsByComment)
-                    .map(([commentIdStr, count]) => ({
-                        updateOne: {
-                            filter: { _id: new mongoose.Types.ObjectId(commentIdStr) },
-                            update: { $inc: { audioRepliesCount: -count } }
-                        }
-                    }));
+                const parentCommentIds = Object.keys(replyCountsByComment).map(id => new mongoose.Types.ObjectId(id));
+                const parentComments = await Comment.find({ _id: { $in: parentCommentIds } }).session(session).lean();
+
+                const commentReplyBulkOps = parentComments
+                    .filter(comment => 
+                        comment.user.toString() !== userId.toString() && 
+                        !userPostIds.some(id => id.toString() === comment.post.toString())
+                    )
+                    .map(comment => {
+                        const commentIdStr = comment._id.toString();
+                        const count = replyCountsByComment[commentIdStr];
+                        return {
+                            updateOne: {
+                                filter: { _id: comment._id },
+                                update: { $inc: { audioRepliesCount: -count } }
+                            }
+                        };
+                    });
 
                 if (commentReplyBulkOps.length > 0) {
                     await Comment.bulkWrite(commentReplyBulkOps, { session });

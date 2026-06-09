@@ -3,6 +3,7 @@ const catchAsync = require('../utils/catchAsync');
 const UploadService = require('../services/upload.service');
 const AppError = require('../utils/AppError');
 const Logger = require('../utils/logger');
+const { Post } = require('../models/post.model');
 
 /**
  * Controller for handling audio uploads
@@ -65,6 +66,23 @@ const uploadImageFile = catchAsync(async (req, res) => {
 const getPresignedUrl = catchAsync(async (req, res) => {
     const { key } = req.query; // Validated by zod
     
+    // Enforcement: Check file ownership or if file is associated with an approved post
+    if (!req.admin) {
+        const requesterId = req.user._id.toString();
+        const expectedPrefix1 = `uploads/audio/${requesterId}/`;
+        const expectedPrefix2 = `uploads/images/${requesterId}/`;
+        
+        if (!key.startsWith(expectedPrefix1) && !key.startsWith(expectedPrefix2)) {
+            const isApprovedPostAsset = await Post.exists({
+                $or: [{ audioKey: key }, { thumbnailKey: key }],
+                status: 'approved'
+            });
+            if (!isApprovedPostAsset) {
+                throw new AppError(httpStatus.FORBIDDEN, 'You do not have permission to access this file');
+            }
+        }
+    }
+
     const signedUrl = await UploadService.getSignedUrl(key);
 
     res.status(httpStatus.OK).json({
@@ -80,6 +98,17 @@ const getPresignedUrl = catchAsync(async (req, res) => {
  */
 const deleteFile = catchAsync(async (req, res) => {
     const { key } = req.body; // Validated by zod
+
+    // Enforcement: Strictly verify the key prefix matches requester ID (only admins can delete arbitrary files)
+    if (!req.admin) {
+        const requesterId = req.user._id.toString();
+        const expectedPrefix1 = `uploads/audio/${requesterId}/`;
+        const expectedPrefix2 = `uploads/images/${requesterId}/`;
+        
+        if (!key.startsWith(expectedPrefix1) && !key.startsWith(expectedPrefix2)) {
+            throw new AppError(httpStatus.FORBIDDEN, 'You do not have permission to delete this file');
+        }
+    }
 
     await UploadService.deleteFromS3(key);
 

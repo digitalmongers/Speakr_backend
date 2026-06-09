@@ -55,7 +55,7 @@ const getPost = catchAsync(async (req, res) => {
 const queryPosts = catchAsync(async (req, res) => {
     const { page, limit, category, language, isKidsContent, creator, cursor, search } = req.query;
 
-    const filter = {};
+    const filter = { status: 'approved' };
     if (category) filter.category = category;
     if (language) filter.language = language;
     // Default to false (exclude kids content) in general feed if not explicitly requested
@@ -68,10 +68,11 @@ const queryPosts = catchAsync(async (req, res) => {
         if (search.trim().length >= 3) {
             filter.$text = { $search: search };
         } else {
+            const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             filter.$or = [
-                { title: { $regex: search, $options: 'i' } },
-                { category: { $regex: search, $options: 'i' } },
-                { language: { $regex: search, $options: 'i' } },
+                { title: { $regex: escapedSearch, $options: 'i' } },
+                { category: { $regex: escapedSearch, $options: 'i' } },
+                { language: { $regex: escapedSearch, $options: 'i' } },
             ];
         }
     }
@@ -103,10 +104,11 @@ const getMyPosts = catchAsync(async (req, res) => {
         if (search.trim().length >= 3) {
             filter.$text = { $search: search };
         } else {
+            const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             filter.$or = [
-                { title: { $regex: search, $options: 'i' } },
-                { category: { $regex: search, $options: 'i' } },
-                { language: { $regex: search, $options: 'i' } },
+                { title: { $regex: escapedSearch, $options: 'i' } },
+                { category: { $regex: escapedSearch, $options: 'i' } },
+                { language: { $regex: escapedSearch, $options: 'i' } },
             ];
         }
     }

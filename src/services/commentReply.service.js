@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const httpStatus = require('http-status').default;
 const commentRepository = require('../repositories/comment.repository');
 const commentReplyRepository = require('../repositories/commentReply.repository');
+const postRepository = require('../repositories/post.repository');
 const UploadService = require('./upload.service');
 const { getRelativeTimeAgo } = require('../utils/time');
 const AppError = require('../utils/AppError');
@@ -36,6 +37,12 @@ const addReply = async (postId, commentId, userId, file) => {
             // 2. Verify comment context matches the post
             if (comment.post.toString() !== postId.toString()) {
                 throw new AppError(httpStatus.BAD_REQUEST, 'Comment does not belong to this post');
+            }
+
+            // Verify post exists and is approved
+            const post = await postRepository.findById(postId, session);
+            if (!post || post.status !== 'approved') {
+                throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
             }
 
             // 3. Spam Prevention: Limit to 10 replies per user on a single comment
@@ -100,6 +107,12 @@ const getRepliesByCommentId = async (postId, commentId, { limit = 10, cursor } =
     }
     if (comment.post.toString() !== postId.toString()) {
         throw new AppError(httpStatus.BAD_REQUEST, 'Comment does not belong to this post');
+    }
+
+    // Verify post exists and is approved
+    const post = await postRepository.findById(postId);
+    if (!post || post.status !== 'approved') {
+        throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
     }
 
     // 2. Retrieve replies using cursor pagination

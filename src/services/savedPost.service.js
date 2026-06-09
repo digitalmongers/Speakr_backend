@@ -21,9 +21,9 @@ const toggleSave = async (postId, userId) => {
 
     try {
         await runTransaction(async (session) => {
-            // 1. Verify post existence
-            const post = await postRepository.findById(postId);
-            if (!post) {
+            // 1. Verify post existence and is approved
+            const post = await postRepository.findById(postId, session);
+            if (!post || post.status !== 'approved') {
                 throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
             }
 
@@ -102,10 +102,10 @@ const getSavedPosts = async (userId, { page, limit = 10, cursor }) => {
         totalPages = Math.ceil(totalResults / limit);
     }
 
-    // Extract populated post documents and filter out orphaned posts
+    // Extract populated post documents and filter out orphaned/unapproved posts
     const posts = savedRecords
         .map(record => record.post)
-        .filter(post => post !== null && post !== undefined);
+        .filter(post => post !== null && post !== undefined && post.status === 'approved');
 
     // Optimize Query: Fetch reactions in bulk to prevent N+1 query loops
     const postIds = posts.map(p => p._id);

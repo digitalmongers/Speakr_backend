@@ -37,11 +37,27 @@ const createLanguage = async (name) => {
 };
 
 /**
- * Get all languages (Admin)
+ * Get all languages with post counts (Admin)
  * @returns {Promise<Array<Object>>}
  */
 const getAllLanguages = async () => {
-    return languageRepository.findAll();
+    const [languages, postCounts] = await Promise.all([
+        languageRepository.findAll(),
+        Post.aggregate([
+            { $group: { _id: '$language', count: { $sum: 1 } } },
+        ]),
+    ]);
+
+    // Build a lookup map: languageName -> postCount
+    const countMap = {};
+    postCounts.forEach(({ _id, count }) => {
+        if (_id) countMap[_id] = count;
+    });
+
+    return languages.map((lang) => ({
+        ...lang,
+        postCount: countMap[lang.name] || 0,
+    }));
 };
 
 /**

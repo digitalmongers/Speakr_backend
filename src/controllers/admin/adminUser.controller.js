@@ -3,6 +3,7 @@ const catchAsync = require('../../utils/catchAsync');
 const adminUserService = require('../../services/admin/adminUser.service');
 const ApiResponse = require('../../utils/ApiResponse');
 const AuditService = require('../../services/audit.service');
+const { invalidateCacheByPattern } = require('../../middlewares/cache.middleware');
 
 /**
  * Get list of verified users (Admin access only)
@@ -65,6 +66,9 @@ const deleteUser = catchAsync(async (req, res) => {
     const { userId } = req.params;
 
     await adminUserService.deleteUser(userId);
+
+    // Invalidate public feeds since user posts/comments/replies are deleted
+    await invalidateCacheByPattern('cache:*:/api/v1/posts*');
 
     AuditService.record({
         action: 'ADMIN_DELETE_USER',

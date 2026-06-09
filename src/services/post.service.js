@@ -51,6 +51,7 @@ const createPost = async (userId, postData) => {
     ...postData,
     creator: userId,
     creatorUsername: user.username,
+    status: postData.isKidsContent ? 'pending' : 'approved',
   };
   const post = await postRepository.create(postBody);
   Logger.info("Post created successfully", {
@@ -66,10 +67,16 @@ const createPost = async (userId, postData) => {
  * @param {ObjectId} [userId]
  * @returns {Promise<Object>}
  */
-const getPostById = async (postId, userId = null) => {
+const getPostById = async (postId, userId = null, allowPending = false) => {
   const post = await postRepository.findById(postId);
   if (!post) {
     throw new AppError(httpStatus.NOT_FOUND, "Post not found");
+  }
+
+  if (post.status !== 'approved' && !allowPending) {
+    if (!userId || post.creator.toString() !== userId.toString()) {
+      throw new AppError(httpStatus.NOT_FOUND, "Post not found");
+    }
   }
 
   if (userId) {
@@ -200,7 +207,7 @@ const queryPosts = async (
  * @param {ObjectId} userId - Demarcates requester for ownership validation
  * @returns {Promise<boolean>}
  */
-const deletePost = async (postId, userId) => {
+const deletePost = async (postId, userId, isAdmin = false) => {
   let postToDelete = null;
   let s3KeysToDelete = [];
   let isDeleted = false;
@@ -213,8 +220,8 @@ const deletePost = async (postId, userId) => {
         throw new AppError(httpStatus.NOT_FOUND, "Post not found");
       }
 
-      // 2. Verify creator ownership (strict RBAC check)
-      if (post.creator.toString() !== userId.toString()) {
+      // 2. Verify creator ownership (strict RBAC check unless user is admin)
+      if (!isAdmin && post.creator.toString() !== userId.toString()) {
         throw new AppError(
           httpStatus.FORBIDDEN,
           "You do not have permission to delete this post",
@@ -311,9 +318,104 @@ const deletePost = async (postId, userId) => {
   }
 };
 
+/**
+ * Update status of an audio post (Admin only)
+ * @param {ObjectId} postId
+ * @param {string} status - 'approved' | 'rejected'
+ * @param {ObjectId} adminId
+ * @returns {Promise<Object>}
+ */
+const updatePostStatus = async (postId, status, adminId) => {
+  const post = await postRepository.findById(postId);
+  if (!post) {
+    throw new AppError(httpStatus.NOT_FOUND, "Post not found");
+  }
+
+  const updatedPost = await postRepository.updateById(postId, { status });
+  if (!updatedPost) {
+    throw new AppError(httpStatus.NOT_FOUND, "Post not found");
+  }
+
+  const AuditService = require("./audit.service");
+  await AuditService.record({
+    action: status === "approved" ? "ADMIN_APPROVE_POST" : "ADMIN_REJECT_POST",
+    entity: "Post",
+    entityId: postId,
+    userId: adminId,
+    metadata: { previousStatus: post.status, newStatus: status },
+  });
+
+  Logger.info(`Post status updated to ${status} by admin ${adminId}`, { postId });
+  return updatedPost;
+};
+
+/**
+ * Update a post by admin (title, category, language)
+ * @param {ObjectId} postId
+ * @param {Object} updateBody
+ * @param {ObjectId} adminId
+ * @returns {Promise<Object>}
+ */
+const updatePostByAdmin = async (postId, updateBody, adminId) => {
+  const post = await postRepository.findById(postId);
+  if (!post) {
+    throw new AppError(httpStatus.NOT_FOUND, "Post not found");
+  }
+
+  const updates = {};
+
+  if (updateBody.title !== undefined) {
+    updates.title = updateBody.title;
+  }
+
+  if (updateBody.category !== undefined) {
+    const category = await categoryRepository.findByName(updateBody.category);
+    if (!category || !category.isActive) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Category '${updateBody.category}' is either inactive or does not exist`,
+      );
+    }
+    updates.category = category.name;
+  }
+
+  if (updateBody.language !== undefined) {
+    const language = await languageRepository.findByName(updateBody.language);
+    if (!language || !language.isActive) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Language '${updateBody.language}' is either inactive or does not exist`,
+      );
+    }
+    updates.language = language.name;
+  }
+
+  const updatedPost = await postRepository.updateById(postId, updates);
+  if (!updatedPost) {
+    throw new AppError(httpStatus.NOT_FOUND, "Post not found");
+  }
+
+  const AuditService = require("./audit.service");
+  await AuditService.record({
+    action: "ADMIN_UPDATE_POST",
+    entity: "Post",
+    entityId: postId,
+    userId: adminId,
+    metadata: {
+      previousData: { title: post.title, category: post.category, language: post.language },
+      updatedData: updates
+    },
+  });
+
+  Logger.info(`Post updated by admin ${adminId}`, { postId });
+  return updatedPost;
+};
+
 module.exports = {
   createPost,
   getPostById,
   queryPosts,
   deletePost,
+  updatePostStatus,
+  updatePostByAdmin,
 };

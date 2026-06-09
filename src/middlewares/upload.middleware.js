@@ -133,15 +133,42 @@ const createUploadMiddleware = (allowedMimeTypes, maxFileSizeMB, folderPrefix) =
 
 const systemSettingService = require('../services/systemSetting.service');
 
-const audioMimeTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/mp4'];
+// Map of format shortname -> MIME types (a format can map to multiple MIME types)
+const FORMAT_TO_MIME = {
+    mp3:  ['audio/mpeg', 'audio/mp3'],
+    wav:  ['audio/wav', 'audio/x-wav'],
+    ogg:  ['audio/ogg'],
+    webm: ['audio/webm'],
+    m4a:  ['audio/mp4', 'audio/x-m4a', 'audio/m4a'],
+    aac:  ['audio/aac', 'audio/x-aac'],
+    flac: ['audio/flac', 'audio/x-flac'],
+};
+
 const imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+/**
+ * Resolve allowed MIME types from the allowedAudioFormats system setting.
+ * Falls back to mp3 only when the setting is missing.
+ */
+const resolveAllowedAudioMimes = async () => {
+    const formats = await systemSettingService.getSetting('allowedAudioFormats', ['mp3']);
+    const mimes = new Set();
+    for (const fmt of formats) {
+        const mapped = FORMAT_TO_MIME[fmt];
+        if (mapped) mapped.forEach((m) => mimes.add(m));
+    }
+    return mimes.size > 0 ? Array.from(mimes) : FORMAT_TO_MIME.mp3;
+};
 
 const uploadAudio = {
     single: (fieldname) => {
         return async (req, res, next) => {
             try {
-                const maxAudioSizeMB = await systemSettingService.getSetting('maxAudioSizeMB', 50);
-                const multerInstance = createUploadMiddleware(audioMimeTypes, maxAudioSizeMB, 'uploads/audio');
+                const [maxAudioSizeMB, allowedMimes] = await Promise.all([
+                    systemSettingService.getSetting('maxAudioSizeMB', 50),
+                    resolveAllowedAudioMimes(),
+                ]);
+                const multerInstance = createUploadMiddleware(allowedMimes, maxAudioSizeMB, 'uploads/audio');
                 multerInstance.single(fieldname)(req, res, next);
             } catch (err) {
                 next(err);

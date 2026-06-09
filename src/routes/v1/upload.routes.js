@@ -55,6 +55,7 @@ router.post(
 // Route: Get Presigned URL (GET /api/v1/upload/presigned-url?key=...)
 router.get(
     '/presigned-url',
+    uploadAuth,
     validate(uploadValidation.getPresignedUrl),
     uploadController.getPresignedUrl
 );
@@ -62,6 +63,7 @@ router.get(
 // Route: Delete File (DELETE /api/v1/upload)
 router.delete(
     '/',
+    uploadAuth,
     validate(uploadValidation.deleteFile),
     uploadController.deleteFile
 );

@@ -3,6 +3,7 @@ const catchAsync = require('../../utils/catchAsync');
 const systemSettingService = require('../../services/systemSetting.service');
 const ApiResponse = require('../../utils/ApiResponse');
 const AuditService = require('../../services/audit.service');
+const { SUPPORTED_AUDIO_FORMATS } = require('../../validations/systemSetting.validation');
 
 /**
  * Get all system settings
@@ -13,6 +14,8 @@ const getSettings = catchAsync(async (req, res) => {
     // Set defaults in response if they don't exist in DB yet
     const responseData = {
         maxAudioSizeMB: settings.maxAudioSizeMB !== undefined ? settings.maxAudioSizeMB : 50,
+        allowedAudioFormats: settings.allowedAudioFormats !== undefined ? settings.allowedAudioFormats : ['mp3'],
+        supportedAudioFormats: SUPPORTED_AUDIO_FORMATS, // let frontend know what options are available
         ...settings
     };
 

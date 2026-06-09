@@ -8,7 +8,7 @@ const { SavedPost } = require('../models/savedPost.model');
  * @returns {Promise<SavedPost|null>}
  */
 const findOneByPostAndUser = async (postId, userId, session = null) => {
-    return SavedPost.findOne({ post: postId, user: userId }).session(session);
+    return SavedPost.findOne({ post: postId, user: userId }).session(session).lean();
 };
 
 /**

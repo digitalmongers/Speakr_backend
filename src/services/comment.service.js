@@ -20,9 +20,9 @@ const addComment = async (postId, userId, content) => {
 
     try {
         await runTransaction(async (session) => {
-            // 1. Verify post exists
-            const post = await postRepository.findById(postId);
-            if (!post) {
+            // 1. Verify post exists and is approved
+            const post = await postRepository.findById(postId, session);
+            if (!post || post.status !== 'approved') {
                 throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
             }
 
@@ -66,9 +66,9 @@ const addComment = async (postId, userId, content) => {
  * @returns {Promise<Object>} Hydrated list of comments with pagination info
  */
 const getCommentsByPostId = async (postId, { limit = 10, cursor } = {}) => {
-    // 1. Verify post exists
+    // 1. Verify post exists and is approved
     const post = await postRepository.findById(postId);
-    if (!post) {
+    if (!post || post.status !== 'approved') {
         throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
     }
 

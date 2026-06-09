@@ -150,6 +150,17 @@ const decrementCommentsCount = async (id, session = null) => {
     ).lean();
 };
 
+/**
+ * Update post document by ID
+ * @param {ObjectId} id
+ * @param {Object} updateBody
+ * @param {ClientSession} [session]
+ * @returns {Promise<Object|null>}
+ */
+const updateById = async (id, updateBody, session = null) => {
+    return Post.findByIdAndUpdate(id, updateBody, { new: true, session }).lean();
+};
+
 module.exports = {
     create,
     findById,
@@ -162,4 +173,5 @@ module.exports = {
     incrementListensCount,
     incrementCommentsCount,
     decrementCommentsCount,
+    updateById,
 };
