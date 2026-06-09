@@ -37,11 +37,27 @@ const createCategory = async (name) => {
 };
 
 /**
- * Get all categories (Admin)
+ * Get all categories with post counts (Admin)
  * @returns {Promise<Array<Object>>}
  */
 const getAllCategories = async () => {
-    return categoryRepository.findAll();
+    const [categories, postCounts] = await Promise.all([
+        categoryRepository.findAll(),
+        Post.aggregate([
+            { $group: { _id: '$category', count: { $sum: 1 } } },
+        ]),
+    ]);
+
+    // Build a lookup map: categoryName -> postCount
+    const countMap = {};
+    postCounts.forEach(({ _id, count }) => {
+        if (_id) countMap[_id] = count;
+    });
+
+    return categories.map((cat) => ({
+        ...cat,
+        postCount: countMap[cat.name] || 0,
+    }));
 };
 
 /**

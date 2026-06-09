@@ -21,9 +21,9 @@ const recordListen = async (postId, { userId = null, guestId = null, ipAddress =
 
     try {
         await runTransaction(async (session) => {
-            // 1. Verify post existence
-            const post = await postRepository.findById(postId);
-            if (!post) {
+            // 1. Verify post existence and is approved
+            const post = await postRepository.findById(postId, session);
+            if (!post || post.status !== 'approved') {
                 throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
             }
 

@@ -51,6 +51,12 @@ const postSchema = new mongoose.Schema(
             required: true,
             default: false,
         },
+        status: {
+            type: String,
+            enum: ['pending', 'approved', 'rejected'],
+            default: 'approved',
+            required: true,
+        },
         duration: {
             type: Number,
             required: [true, 'Audio duration is required'],
@@ -104,6 +110,8 @@ postSchema.index({ creator: 1, createdAt: -1 });
 postSchema.index({ category: 1, createdAt: -1 });
 postSchema.index({ language: 1, createdAt: -1 });
 postSchema.index({ isKidsContent: 1, createdAt: -1 });
+postSchema.index({ status: 1, isKidsContent: 1, createdAt: -1 });
+postSchema.index({ status: 1, createdAt: -1 });
 postSchema.index({ createdAt: -1 });
 
 // Full-Text Search Index for Blazing-Fast Global Search (relevance ranked)
