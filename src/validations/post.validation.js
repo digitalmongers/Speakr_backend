@@ -1,5 +1,6 @@
 const { z } = require('zod');
 const { REGEX } = require('../constants');
+const { POST_REPORT_REASONS } = require('../models/postReport.model');
 
 const createPost = {
     body: z.object({
@@ -48,8 +49,22 @@ const getPost = {
     }),
 };
 
+const reportPost = {
+    params: z.object({
+        postId: z.string().regex(REGEX.MONGODB_ID, 'Invalid Post ID format'),
+    }),
+    body: z.object({
+        reason: z.enum(POST_REPORT_REASONS, {
+            errorMap: () => ({
+                message: `Reason must be one of: ${POST_REPORT_REASONS.join(', ')}`,
+            }),
+        }),
+    }),
+};
+
 module.exports = {
     createPost,
     queryPosts,
     getPost,
+    reportPost,
 };

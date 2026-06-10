@@ -1,6 +1,7 @@
 const httpStatus = require('http-status').default;
 const catchAsync = require('../utils/catchAsync');
 const postService = require('../services/post.service');
+const bannerService = require('../services/banner.service');
 const { invalidateCacheByPattern } = require('../middlewares/cache.middleware');
 const Logger = require('../utils/logger');
 
@@ -78,11 +79,17 @@ const queryPosts = catchAsync(async (req, res) => {
     }
 
     const userId = req.user ? req.user._id : null;
-    const result = await postService.queryPosts(filter, { page, limit, cursor }, userId);
+    const [result, activeBanners] = await Promise.all([
+        postService.queryPosts(filter, { page, limit, cursor }, userId),
+        bannerService.getActiveBanners(),
+    ]);
 
     res.status(httpStatus.OK).json({
         status: 'success',
-        data: result,
+        data: {
+            ...result,
+            banners: activeBanners,
+        },
     });
 });
 
@@ -139,10 +146,27 @@ const deletePost = catchAsync(async (req, res) => {
     });
 });
 
+/**
+ * Controller to report a post for policy violations
+ * Requires authentication — only logged-in users can submit reports
+ */
+const reportPost = catchAsync(async (req, res) => {
+    const { postId } = req.params;
+    const { reason } = req.body;
+
+    await postService.reportPost(postId, req.user._id, reason);
+
+    res.status(httpStatus.CREATED).json({
+        status: 'success',
+        message: 'Post reported successfully. Our team will review it shortly.',
+    });
+});
+
 module.exports = {
     createPost,
     getPost,
     queryPosts,
     getMyPosts,
     deletePost,
+    reportPost,
 };
