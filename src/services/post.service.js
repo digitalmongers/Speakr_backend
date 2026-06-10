@@ -8,6 +8,7 @@ const savedPostRepository = require("../repositories/savedPost.repository");
 const listenRepository = require("../repositories/listen.repository");
 const commentRepository = require("../repositories/comment.repository");
 const commentReplyRepository = require("../repositories/commentReply.repository");
+const postReportRepository = require("../repositories/postReport.repository");
 const mongoose = require("mongoose");
 const UploadService = require("./upload.service");
 const AppError = require("../utils/AppError");
@@ -22,13 +23,17 @@ const { runTransaction } = require("../utils/transaction");
  * @returns {Promise<Object>}
  */
 const createPost = async (userId, postData) => {
-  const user = await userRepository.getUserById(userId);
+  const [user, category, language] = await Promise.all([
+    userRepository.getUserById(userId),
+    categoryRepository.findByName(postData.category),
+    languageRepository.findByName(postData.language),
+  ]);
+
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, "Creator user not found");
   }
 
   // Verify category exists and is active
-  const category = await categoryRepository.findByName(postData.category);
   if (!category || !category.isActive) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
@@ -38,7 +43,6 @@ const createPost = async (userId, postData) => {
   postData.category = category.name; // Standardize casing to match database record
 
   // Verify language exists and is active
-  const language = await languageRepository.findByName(postData.language);
   if (!language || !language.isActive) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
@@ -411,6 +415,39 @@ const updatePostByAdmin = async (postId, updateBody, adminId) => {
   return updatedPost;
 };
 
+/**
+ * Report a post for policy violations
+ * @param {ObjectId} postId - Target post
+ * @param {ObjectId} reporterId - Authenticated user submitting the report
+ * @param {string} reason - One of: 'spam', 'fake content', 'abuse', 'copyright'
+ * @returns {Promise<Object>} - The created report document
+ */
+const reportPost = async (postId, reporterId, reason) => {
+  // 1. Verify post exists and is publicly visible (only approved posts can be reported)
+  const post = await postRepository.findById(postId);
+  if (!post || post.status !== 'approved') {
+    throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
+  }
+
+  // 2. Application-layer duplicate guard (fast path before hitting the DB unique index)
+  //    The compound unique index { post, reporter } is the authoritative backstop —
+  //    this check simply provides a clean, descriptive error instead of a raw MongoError.
+  const alreadyReported = await postReportRepository.existsByPostAndReporter(postId, reporterId);
+  if (alreadyReported) {
+    throw new AppError(httpStatus.CONFLICT, 'You have already reported this post');
+  }
+
+  // 3. Persist the report
+  const report = await postReportRepository.create({
+    post: postId,
+    reporter: reporterId,
+    reason,
+  });
+
+  Logger.info('Post reported', { postId, reporterId, reason });
+  return report;
+};
+
 module.exports = {
   createPost,
   getPostById,
@@ -418,4 +455,5 @@ module.exports = {
   deletePost,
   updatePostStatus,
   updatePostByAdmin,
+  reportPost,
 };

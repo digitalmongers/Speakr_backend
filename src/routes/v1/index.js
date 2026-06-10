@@ -12,6 +12,7 @@ const adminLanguageRoutes = require('./admin/adminLanguage.routes');
 const languageRoutes = require('./language.routes');
 const adminSettingRoutes = require('./admin/adminSetting.routes');
 const settingRoutes = require('./setting.routes');
+const adminBannerRoutes = require('./admin/adminBanner.routes');
 const router = express.Router();
 
 // Health check endpoint
@@ -30,6 +31,7 @@ router.use('/admin/categories', adminCategoryRoutes);
 router.use('/admin/posts', adminPostRoutes);
 router.use('/admin/languages', adminLanguageRoutes);
 router.use('/admin/settings', adminSettingRoutes);
+router.use('/admin/banners', adminBannerRoutes);
 router.use('/settings', settingRoutes);
 
 module.exports = router;

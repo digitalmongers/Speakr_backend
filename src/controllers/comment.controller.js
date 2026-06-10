@@ -13,8 +13,11 @@ const addComment = catchAsync(async (req, res) => {
 
     const comment = await commentService.addComment(postId, userId, content);
 
-    // Invalidate caches related to this post if any list caches are present
-    await invalidateCacheByPattern(`cache:/api/v1/posts/${postId}*`);
+    // Invalidate caches related to this post (single details, comments) and general posts lists (commentsCount change)
+    await Promise.all([
+        invalidateCacheByPattern(`cache:*:*/posts/${postId}*`),
+        invalidateCacheByPattern('cache:*:/api/v1/posts*'),
+    ]).catch((err) => console.error('Failed to invalidate caches on comment add:', err));
 
     res.status(httpStatus.CREATED).json({
         status: 'success',
@@ -51,8 +54,11 @@ const deleteComment = catchAsync(async (req, res) => {
 
     await commentService.deleteComment(commentId, postId, userId);
 
-    // Invalidate caches related to this post if any list caches are present
-    await invalidateCacheByPattern(`cache:/api/v1/posts/${postId}*`);
+    // Invalidate caches related to this post (single details, comments) and general posts lists (commentsCount change)
+    await Promise.all([
+        invalidateCacheByPattern(`cache:*:*/posts/${postId}*`),
+        invalidateCacheByPattern('cache:*:/api/v1/posts*'),
+    ]).catch((err) => console.error('Failed to invalidate caches on comment delete:', err));
 
     res.status(httpStatus.OK).json({
         status: 'success',

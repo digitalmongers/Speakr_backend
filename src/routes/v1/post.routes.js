@@ -30,11 +30,12 @@ router.post(
 );
 
 /**
- * Endpoint: Query All Public Posts
- * Accessible publicly with query filtering and pagination.
+ * Endpoint: Public Feed
+ * Returns all approved, non-kids posts. Accessible publicly with optional auth,
+ * query filtering (category, language, search) and cursor/offset pagination.
  */
 router.get(
-    '/',
+    '/feed',
     optionalAuth,
     cacheMiddleware(60),
     validate(postValidation.queryPosts),
@@ -109,6 +110,19 @@ router.post(
     lockRequest, // Block concurrent duplicate listen attempts
     validate(postValidation.getPost),
     listenController.recordListen
+);
+
+/**
+ * Endpoint: Report a Post
+ * Restricted to authenticated users. Uses lockRequest to prevent
+ * concurrent duplicate submissions racing past the app-layer guard.
+ */
+router.post(
+    '/:postId/report',
+    userAuth,
+    lockRequest, // Prevent concurrent duplicate report submissions for the same user+post
+    validate(postValidation.reportPost),
+    postController.reportPost
 );
 
 /**

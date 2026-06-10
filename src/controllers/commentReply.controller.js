@@ -17,8 +17,10 @@ const addReply = catchAsync(async (req, res) => {
 
     const reply = await commentReplyService.addReply(postId, commentId, userId, req.file);
 
-    // Invalidate cached lists relating to this post to keep UI consistent
-    await invalidateCacheByPattern(`cache:/api/v1/posts/${postId}*`);
+    // Invalidate cached lists relating to this post (single details, comments, replies)
+    await invalidateCacheByPattern(`cache:*:*/posts/${postId}*`).catch((err) => {
+        console.error('Failed to invalidate caches on reply add:', err);
+    });
 
     res.status(httpStatus.CREATED).json({
         status: 'success',
@@ -58,8 +60,10 @@ const deleteReply = catchAsync(async (req, res) => {
 
     await commentReplyService.deleteReply(postId, commentId, replyId, userId);
 
-    // Invalidate cached lists relating to this post
-    await invalidateCacheByPattern(`cache:/api/v1/posts/${postId}*`);
+    // Invalidate cached lists relating to this post (single details, comments, replies)
+    await invalidateCacheByPattern(`cache:*:*/posts/${postId}*`).catch((err) => {
+        console.error('Failed to invalidate caches on reply delete:', err);
+    });
 
     res.status(httpStatus.OK).json({
         status: 'success',

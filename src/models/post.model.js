@@ -111,6 +111,9 @@ postSchema.index({ category: 1, createdAt: -1 });
 postSchema.index({ language: 1, createdAt: -1 });
 postSchema.index({ isKidsContent: 1, createdAt: -1 });
 postSchema.index({ status: 1, isKidsContent: 1, createdAt: -1 });
+postSchema.index({ status: 1, isKidsContent: 1, category: 1, createdAt: -1 });
+postSchema.index({ status: 1, isKidsContent: 1, language: 1, createdAt: -1 });
+postSchema.index({ status: 1, isKidsContent: 1, creator: 1, createdAt: -1 });
 postSchema.index({ status: 1, createdAt: -1 });
 postSchema.index({ createdAt: -1 });
 
