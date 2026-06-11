@@ -13,9 +13,31 @@ const listenController = require('../../controllers/listen.controller');
 const commentController = require('../../controllers/comment.controller');
 const commentReplyController = require('../../controllers/commentReply.controller');
 const commentReplyValidation = require('../../validations/commentReply.validation');
-const { uploadAudio, multerErrorHandler } = require('../../middlewares/upload.middleware');
+const { uploadAudio, uploadPostFiles, multerErrorHandler } = require('../../middlewares/upload.middleware');
 
 const router = express.Router();
+
+const processPostFiles = (req, res, next) => {
+    if (req.files) {
+        const audioFile = req.files.audio?.[0] || req.files.file?.[0];
+        const thumbnailFile = req.files.thumbnail?.[0] || req.files.image?.[0];
+
+        if (audioFile) {
+            req.body.audioUrl = audioFile.location;
+            req.body.audioKey = audioFile.key;
+        }
+        if (thumbnailFile) {
+            req.body.thumbnailUrl = thumbnailFile.location;
+            req.body.thumbnailKey = thumbnailFile.key;
+        }
+    }
+
+    if (req.body.duration !== undefined) {
+        req.body.duration = Number(req.body.duration);
+    }
+
+    next();
+};
 
 /**
  * Endpoint: Create Post
@@ -25,6 +47,9 @@ router.post(
     '/',
     userAuth,
     lockRequest, // Block concurrency and duplicate submissions
+    uploadPostFiles.fields(),
+    multerErrorHandler,
+    processPostFiles,
     validate(postValidation.createPost),
     postController.createPost
 );

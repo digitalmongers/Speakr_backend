@@ -7,7 +7,7 @@ const errorConverter = (err, req, res, next) => {
     let error = err;
     if (!(error instanceof AppError)) {
         const statusCode =
-            error.statusCode || error instanceof mongoose.Error ? 400 : 500;
+            error.statusCode || (error instanceof mongoose.Error ? 400 : 500);
         const message = error.message || 'Internal Server Error';
         error = new AppError(statusCode, message, false, err.stack);
     }
